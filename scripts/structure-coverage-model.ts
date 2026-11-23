@@ -27,6 +27,21 @@ import {
 } from "../data/chemicals";
 import { catalogIsMixture, catalogStructures } from "../molecule-builder/catalog";
 
+/**
+ * Why a catalog entry still has no dose.
+ *
+ * The report prints one line per gap with its reason, because a gap without a
+ * reason cannot be told apart from an oversight. The key is the catalog name;
+ * an entry without an entry here is reported as `ohne Rezept`, which is what an
+ * unfinished row looks like.
+ */
+export const GAP_REASONS: Readonly<Record<string, string>> = {
+	Lackmus: "Farbstoffgemisch ohne Archivstruktur; das Modell kennt keinen Indikatorumschlag",
+	Rotkohlsaft: "Gemisch von Anthocyanen ohne Archivstruktur; das Modell kennt keinen Indikatorumschlag",
+	"Schiff-Reagenz": "Fuchsin-Schwefeldioxid-Lösung ohne Archivstruktur; eine Vertreterstruktur wäre eine gesetzte Identität",
+	Olivenöl: "Esteröl; die Phasenrechnung liest Sauerstoff als polar und damit als mischbar",
+};
+
 /** How a single catalog entry reaches the lab; salts still name their phase separately. */
 export type EntryForm = "salt" | "reagent" | "reference";
 
@@ -131,6 +146,12 @@ function soluteParts(entry: CatalogChemical): MoleculeDefinition[] {
 
 function isSalt(entry: CatalogChemical): boolean {
 	if (entry.category === "Salze") return true;
+	// A mixed stock carries ions without being a salt: Fehling II holds tartrate
+	// and lye, Tollens' reagent the diamminesilver complex, Lugol's solution
+	// iodide next to iodine. Only a formula that the solubility table knows can
+	// stand as one, otherwise the report would file `CuSO4(aq)` as an identity
+	// next to the copper sulfate it holds.
+	if (!Object.prototype.hasOwnProperty.call(saltSolubility, normalizeFormula(entry.formula))) return false;
 	if (soluteParts(entry).some((part) => ionic(part) || hasNetCharge(part))) return true;
 	return entry.preview ? ionic(entry.preview) : false;
 }
@@ -332,7 +353,11 @@ export function renderCoverageMarkdown(report: CoverageReport): string {
 		else byCategory.set(entry.category, [entry.name]);
 	}
 	lines.push("## Entries without a dose", "");
-	for (const [category, names] of byCategory) lines.push(`- ${category}: ${names.join(", ")}`);
+	for (const [category, names] of byCategory) {
+		for (const name of names) {
+			lines.push(`- ${name} (${category}) — ${GAP_REASONS[name] ?? "ohne Rezept"}`);
+		}
+	}
 	lines.push("");
 	return lines.join("\n");
 }

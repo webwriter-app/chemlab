@@ -3,7 +3,7 @@ import { legacyElementKeyToAtomicNumber } from "../periodic-table/legacy-names";
 import { metalCrystal } from "../periodic-table/metal-reference";
 import type { Molecule as LabMolecule } from "../chemlib";
 import { fitGeometry } from "./geometry";
-import { aqueousAcidBaseSpecies } from "./aqueous-preview";
+import { aqueousAcidBaseSpecies, isCarboxylicAcid } from "./aqueous-preview";
 import { type Atom, type Bond, type Crystal, type Molecule, type Point3, type Structure } from "./structure";
 import catalogReferences from "../data/structures/catalog.generated.json";
 import { mixtures } from "../data/structures/sources.json";
@@ -112,6 +112,27 @@ function catalogMolecule(key: string | undefined, definition: MoleculeDefinition
 	return { version: 1, kind: "molecule", name: definition.formula, catalogKey: key, atoms, bonds };
 }
 
+// A lye is one substance on the card and two ions in the bath: its graph carries
+// an `acidbase` bond on the hydroxide, so the simulation splits it and the
+// picture shows the same pair. A mixed stock such as Fehling II or Tollens'
+// reagent holds sodium hydroxide as one of its parts, which takes the same route.
+function lyeIons(definition: MoleculeDefinition) {
+	if (definition.formula !== "NaOH" && definition.formula !== "KOH") return undefined;
+	const sodium = definition.formula === "NaOH";
+	return [
+		{ formula: sodium ? "Na⁺" : "K⁺", atoms: [sodium ? "sodium" : "potassium"], charges: [1], bonds: [] },
+		{ formula: "OH⁻", atoms: ["oxygen", "hydrogen"], charges: [-1, 0], bonds: ["0-1:covalent:1"] },
+	];
+}
+
+// One picture per distinct species. A mixed stock names each of its parts once,
+// but the lye of Fehling II and of Tollens' reagent is two parts and would
+// otherwise be drawn as two hydroxide ions.
+function speciesKey(definition: MoleculeDefinition) {
+	return [definition.formula, definition.atoms.join(","), (definition.bonds ?? []).join(","),
+		(definition.charges ?? []).join(",")].join("|");
+}
+
 function catalogDefinitions(entry: CatalogChemical) {
 	const parts = entry.recipe?.parts ?? [];
 	if (entry.recipe?.aqueousMolar) {
@@ -121,14 +142,11 @@ function catalogDefinitions(entry: CatalogChemical) {
 				{ formula: "Cl⁻", atoms: ["chlorine"], charges: [-1], bonds: [] },
 			];
 		}
-		if (entry.formula === "NaOH" || entry.formula === "KOH") {
-			const metal = entry.formula === "NaOH" ? "sodium" : "potassium";
-			return [
-				{ formula: entry.formula === "NaOH" ? "Na⁺" : "K⁺", atoms: [metal], charges: [1], bonds: [] },
-				{ formula: "OH⁻", atoms: ["oxygen", "hydrogen"], charges: [-1, 0], bonds: ["0-1:covalent:1"] },
-			];
-		}
-		return parts.map(part => part.molecule).filter(definition => !isWaterDefinition(definition));
+		const seen = new Set<string>();
+		return parts.map(part => part.molecule)
+			.filter(definition => !isWaterDefinition(definition))
+			.flatMap(definition => lyeIons(definition) ?? [definition])
+			.filter(definition => !seen.has(speciesKey(definition)) && seen.add(speciesKey(definition)));
 	}
 	return entry.preview ? [entry.preview] : parts.map(part => part.molecule);
 }
@@ -206,9 +224,15 @@ export function catalogAqueousStructure(key: string): Molecule | undefined {
 	if (cached) return cached;
 	const entry = entries.get(key);
 	const limewater = key === "Kalkwasser";
-	const carboxylicAcid = entry?.category === "Carbonsäuren" && !!entry.concentrationLimit;
-	if (!entry || (!entry.recipe?.aqueousMolar && !carboxylicAcid && !limewater)) return undefined;
+	const acidStock = entry?.category === "Carbonsäuren" && !!entry.concentrationLimit;
+	if (!entry || (!entry.recipe?.aqueousMolar && !acidStock && !limewater)) return undefined;
 	const definitions = catalogDefinitions(entry);
+	// A carboxylic acid is drawn with the proton it gives up. The stock of one
+	// keeps its category test, and a household mixture that doses one — vinegar,
+	// lemon juice — is recognised by its single graph instead. The second route
+	// only adds pictures, it never changes one that exists.
+	const carboxylicAcid = !!entry.concentrationLimit && (acidStock ||
+		(definitions.length === 1 && isCarboxylicAcid(definitions[0])));
 	const species = definitions.length === 1 ? aqueousAcidBaseSpecies(definitions[0], carboxylicAcid) ?? definitions : definitions;
 	const graphs = limewater ? [references["@calcium"], references["@hydroxide"]] as Molecule[]
 		: species.flatMap(definition => catalogMolecule(undefined, definition) ?? []);

@@ -15,7 +15,9 @@ import { catalogStructures } from "../molecule-builder/catalog";
  * dioxide and formaldehyde are booked as solutes instead, because the model
  * keeps dissolved CO₂ as the carbonic-acid family that the gas evolution
  * removes from, and formaldehyde leaves no Henry row behind that would let a
- * portion escape again.
+ * portion escape again. A bottle that holds a mixture — air — names one
+ * tabulated gas per share instead of a solute, and its shares add up to the
+ * portion so that a litre of the bottle fills a litre of gas space.
  */
 
 const gases = chemicalCatalog.filter(entry => entry.recipe?.phase === "gas");
@@ -59,6 +61,17 @@ test("every catalog gas names a tabulated gas and carries a builder structure", 
 			assert.ok(table, gas.name);
 			assert.equal(table.phase, "gas", gas.name);
 			assert.ok(table.solubility! > 0, gas.name);
+		} else if (recipe.gases?.length) {
+			let shares = 0;
+			for (const { gas: key, share } of recipe.gases) {
+				const table = evolvedGases[key];
+				assert.ok(table, `${gas.name}/${key}`);
+				assert.equal(table.phase, "gas", `${gas.name}/${key}`);
+				assert.ok(table.solubility! > 0, `${gas.name}/${key}`);
+				assert.ok(share > 0, `${gas.name}/${key}`);
+				shares += share;
+			}
+			near(shares, 1, 1e-9);
 		} else assert.ok((recipe.parts?.length ?? 0) > 0, `${gas.name} books a solute of its own`);
 		// a gas at lab conditions is lighter than any liquid or solid portion
 		assert.ok(recipe.density > 0 && recipe.density < 0.005, `${gas.name}: ${recipe.density}`);

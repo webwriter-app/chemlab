@@ -13,6 +13,29 @@ const waterIon = (oxygen: boolean, hydrogenCount: number, charge: number): Molec
 	};
 };
 
+/**
+ * Whether a graph carries a carboxyl group: a carbonyl carbon that is single
+ * bonded to an oxygen which holds a hydrogen.
+ *
+ * A stock of one acid gives that away by its category, but a household mixture
+ * such as vinegar or lemon juice is a `Stoffgemisch` whose one modeled solute is
+ * a carboxylic acid. The preview asks the graph instead of the category there,
+ * so the same picture comes out either way.
+ */
+export function isCarboxylicAcid(definition: MoleculeDefinition): boolean {
+	const edges = definition.bonds.map(bond => {
+		const [pair, , order] = bond.split(":");
+		const [from, to] = pair.split("-").map(Number);
+		return { from, to, order };
+	});
+	const carbonyls = new Set(edges.filter(({ from, to, order }) => order === "2" &&
+		definition.atoms[from] === "carbon" && definition.atoms[to] === "oxygen").map(({ from }) => from));
+	const acidicOxygens = new Set(edges.filter(({ from, to, order }) => order === "1" &&
+		carbonyls.has(from) && definition.atoms[to] === "oxygen").map(({ to }) => to));
+	return edges.some(({ from, to, order }) => order === "1" && acidicOxygens.has(from) &&
+		definition.atoms[to] === "hydrogen");
+}
+
 // Qualitative catalog pictures of the principal dissociation products.
 // Analytical stock recipes and the equilibrium solver remain independent.
 export function aqueousAcidBaseSpecies(solute: MoleculeDefinition, carboxylicAcid: boolean): MoleculeDefinition[] | undefined {

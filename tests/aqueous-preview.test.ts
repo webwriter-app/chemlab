@@ -22,7 +22,9 @@ assert.deepEqual(aqueousComponents(catalogAqueousStructure("Salpetersäure")).ma
 
 // A stock of a neutral molecule has no ion pair to show: bromine water
 // arrives as dissolved Br₂, and the peroxide already needs its own model.
-const neutralStocks = new Set(["Wasserstoffperoxidlösung", "Bromwasser"]);
+// A stock without a net charge balance: the three indicator dyes of the universal
+// indicator are all neutral acids, so it holds no ion pair to show.
+const neutralStocks = new Set(["Wasserstoffperoxidlösung", "Bromwasser", "Universalindikator"]);
 for (const entry of structureCatalog) {
 	const weakAcid = entry.category === "Carbonsäuren" && entry.concentrationLimit;
 	if ((!entry.recipe?.aqueousMolar && !weakAcid) || neutralStocks.has(entry.name)) continue;

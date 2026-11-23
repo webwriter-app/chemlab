@@ -26,6 +26,12 @@ export interface ChemicalRecipe {
 	 * parts carry no measure of their own.
 	 */
 	gas?: string;
+	/**
+	 * Shares of a gas mixture, as fractions of the dosed volume. A bottle of air
+	 * is not one gas, so a dose books every constituent into the target's gas
+	 * space instead of naming a single {@link gas}.
+	 */
+	gases?: ReadonlyArray<{ gas: string; share: number }>;
 }
 
 export function isWaterDefinition(molecule: MoleculeDefinition): boolean {
@@ -175,6 +181,29 @@ function aqueous(name: string, category: ChemicalClass, solute: MoleculeDefiniti
 		recipe: { phase: "liquid", density: 1, aqueousMolar: true, parts: [{ molecule: water, amount: 55.5 }, { molecule: solute, amount: 1 }] } };
 }
 
+/**
+ * A reagent bottle that holds several modeled substances instead of one.
+ *
+ * The card keeps the formula the bottle carries, because a reagent mixture has
+ * no single graph, while the parts are what the model doses: they are given in
+ * mol per model litre at concentration 1, exactly like a stock of one solute.
+ * That way `withConcentration` sets the strength of the whole mixture with one
+ * number and the charge of the parts stays balanced under dilution, and the
+ * acid-base, salt, hydroxide and complex solvers only ever see the ion pairs
+ * the bottle really contains. A part the structure library does not carry turns
+ * the row back into a reference entry, so the palette still lists the bottle
+ * and the coverage report keeps counting the gap instead of dosing a substitute.
+ */
+function mixedStock(name: string, category: ChemicalClass, formula: string,
+	parts: ReadonlyArray<{ molecule: MoleculeDefinition | undefined; amount: number }>,
+	concentrationLimit: number): CatalogChemical {
+	if (parts.some(({ molecule }) => !molecule)) return reference(name, category, formula);
+	const solute = parts as ReadonlyArray<{ molecule: MoleculeDefinition; amount: number }>;
+	return { name, category, formula, concentrationLimit,
+		recipe: { phase: "liquid", density: 1, aqueousMolar: true,
+			parts: [{ molecule: water, amount: 55.5 }, ...solute.map(({ molecule, amount }) => ({ molecule, amount }))] } };
+}
+
 function covalent(formula: string, atoms: string[], links: readonly (readonly [number, number, number?])[], hydrogens: number[]): MoleculeDefinition {
 	return molecule(formula, atoms, links.map(([from, to, order = 1]) => `${from}-${to}:covalent:${order}`), hydrogens);
 }
@@ -285,6 +314,19 @@ function gasReagent(name: string, category: ChemicalClass, gas: string | undefin
 	return { name, category, formula, preview, recipe };
 }
 
+/**
+ * A portion from a gas bottle that holds a mixture rather than one gas. The
+ * palette asks for a volume and every share lands in the target's gas space,
+ * so a dose of air carries its nitrogen, oxygen and argon together. A
+ * constituent the gas table does not know is dropped by the dose, which is why
+ * the recipe only names gases with a Henry row.
+ */
+function gasMixture(name: string, category: ChemicalClass, formula: string, molarMass: number,
+	gases: ChemicalRecipe["gases"]): CatalogChemical {
+	return { name, category, formula,
+		recipe: { phase: "gas", density: molarMass / (MOLAR_GAS_VOLUME * 1000), parts: [], gases } };
+}
+
 const propanone = covalent("C₃H₆O", ["carbon", "carbon", "carbon", "oxygen"], [[0, 1], [1, 2], [1, 3, 2]], [3, 0, 3, 0]);
 const sulfuricAcid = covalent("H₂SO₄", ["sulfur", "oxygen", "oxygen", "oxygen", "oxygen"], [[0, 1, 2], [0, 2, 2], [0, 3], [0, 4]], [0, 0, 0, 1, 1]);
 const phosphoricAcid = covalent("H₃PO₄", ["phosphorus", "oxygen", "oxygen", "oxygen", "oxygen"], [[0, 1, 2], [0, 2], [0, 3], [0, 4]], [0, 0, 1, 1, 1]);
@@ -298,6 +340,26 @@ const carbonDioxide = covalent("CO₂", ["carbon", "oxygen", "oxygen"], [[0, 1, 
 const carbonicAcid = covalent("H₂CO₃", ["carbon", "oxygen", "oxygen", "oxygen"], [[0, 1, 2], [0, 2], [0, 3]], [0, 0, 1, 1]);
 const ethene = covalent("C₂H₄", ["carbon", "carbon"], [[0, 1, 2]], [2, 2]);
 const iodine = covalent("I₂", ["iodine", "iodine"], [[0, 1]], [0, 0]);
+// The two reagent graphs a mixture row reuses: lemon juice doses the citric
+// acid of its own catalog row, and sand the silicon dioxide of the oxide row.
+// Both stay one graph, so a portion of the mixture and a portion of the pure
+// substance reach the same acid family and the same solid.
+const citricAcid = covalent("C₆H₈O₇",
+	[...Array(6).fill("carbon"), ...Array(7).fill("oxygen")],
+	[[0, 1], [1, 2], [2, 3], [3, 4], [2, 5], [2, 6], [0, 7, 2], [0, 8], [4, 9, 2], [4, 10], [5, 11, 2], [5, 12]],
+	[0, 2, 0, 2, 0, 0, 1, 0, 1, 0, 1, 0, 1]);
+const siliconDioxide = covalent("SiO₂", ["silicon", "oxygen", "oxygen"], [[0, 1, 2], [0, 2, 2]], [0, 0, 0]);
+// The technical mixture of light alkanes is dosed as the n-hexane it is mainly
+// made of, and the library already carries that graph.
+const hexane = libraryMolecule("Hexan", "C₆H₁₄") ?? alkane("C₆H₁₄", 6);
+// The indicator dyes and the citrate ion are library graphs like the ones
+// above: the universal indicator is the three dyes of their own catalog rows at
+// equal strength, and Benedict's reagent holds its copper with the citrate that
+// the structure library already draws.
+const phenolphthalein = libraryMolecule("Phenolphthalein", "C₂₀H₁₄O₄");
+const bromothymolBlue = libraryMolecule("Bromthymolblau", "C₂₇H₂₈Br₂O₅S");
+const methylOrange = libraryMolecule("Methylorange", "C₁₄H₁₄N₃NaO₃S");
+const citrate = libraryMolecule("@citrate", "C₆H₅O₇³⁻");
 
 function ion(formula: string, atom: string, charge: number): MoleculeDefinition {
 	return { formula, atoms: [atom], bonds: [], charges: [charge] };
@@ -360,6 +422,14 @@ const sodiumBicarbonate: MoleculeDefinition = { formula: "NaHCO₃",
 	bonds: ["1-2:covalent:2", "1-3:covalent:1", "1-4:covalent:1", "4-5:covalent:1", "0-3:ionic:1"] };
 const sodium = ion("Na⁺", "sodium", 1);
 const potassium = ion("K⁺", "potassium", 1);
+// The cations of the two waters and of the three copper and silver reagents.
+// Each is the single-atom ion the solubility tables key their precipitates on,
+// so a stock splits into exactly the species the hydroxide and complex solvers
+// look for.
+const calcium = ion("Ca²⁺", "calcium", 2);
+const magnesium = ion("Mg²⁺", "magnesium", 2);
+const copper = ion("Cu²⁺", "copper", 2);
+const silver = ion("Ag⁺", "silver", 1);
 // The nitrate keeps the N⁺/O⁻ charges of its resonance limit, because
 // four-bonded nitrogen cannot be neutral. Potassium donates the second
 // electron to the oxygen it bonds, so the anion comes out as the
@@ -699,8 +769,16 @@ export const chemicalCatalog: CatalogChemical[] = [
 	molecular("Bromethan", "Halogenkohlenwasserstoffe", "C₂H₅Br", 1.46, "liquid"),
 	gasReagent("Chlorethen (Vinylchlorid)", "Halogenkohlenwasserstoffe", "C2H3Cl", "C₂H₃Cl", 62.498,
 		covalent("C₂H₃Cl", ["carbon", "carbon", "chlorine"], [[0, 1, 2], [0, 2]], [2, 1, 0])),
-	reference("Paraffinöl", "Lösungsmittel", ""),
-	reference("Petrolether", "Lösungsmittel", ""),
+	// Liquid paraffin is the technical C₁₀–C₁₆ cut, so the library carries no
+	// single graph for it. The dose uses the middle of the cut as its
+	// representative — dodecane — and the density of the oil itself, which keeps
+	// a portion as thick as it was poured. A hydrocarbon is a spectator.
+	pure("Paraffinöl", "Lösungsmittel", alkane("C₁₂H₂₆", 12), "liquid", 0.84),
+	// Petroleum ether is the technical mixture of light alkanes; the model doses
+	// the n-hexane it is mainly made of, so a portion floats as its own band like
+	// every other hydrocarbon. Its density is the middle of the 0.64–0.66 range
+	// the fraction covers.
+	pure("Petrolether", "Lösungsmittel", hexane, "liquid", 0.66),
 	organic("Ethanol", "Alkohole", alkanol("C₂H₆O", 2, 1), 0.789),
 	organic("Methanol", "Alkohole", covalent("CH₄O", ["carbon", "oxygen"], [[0, 1]], [3, 1]), 0.792),
 	organic("Propan-1-ol", "Alkohole", alkanol("C₃H₈O", 3, 0), 0.803),
@@ -733,10 +811,7 @@ export const chemicalCatalog: CatalogChemical[] = [
 		[[0, 1], [1, 2], [2, 3, 2], [2, 4]], [3, 2, 0, 0, 1]), 0.993, "liquid", concentratedReagent.propionicAcid),
 	organic("Milchsäure", "Carbonsäuren", covalent("C₃H₆O₃", ["carbon", "carbon", "carbon", "oxygen", "oxygen", "oxygen"],
 		[[0, 1], [1, 2], [1, 3], [2, 4, 2], [2, 5]], [3, 1, 0, 1, 0, 1]), 1.21, "liquid", concentratedReagent.lacticAcid),
-	organic("Zitronensäure", "Carbonsäuren", covalent("C₆H₈O₇",
-		[...Array(6).fill("carbon"), ...Array(7).fill("oxygen")],
-		[[0, 1], [1, 2], [2, 3], [3, 4], [2, 5], [2, 6], [0, 7, 2], [0, 8], [4, 9, 2], [4, 10], [5, 11, 2], [5, 12]],
-		[0, 2, 0, 2, 0, 0, 1, 0, 1, 0, 1, 0, 1]), 1.665, "solid", concentratedReagent.citricAcid),
+	organic("Zitronensäure", "Carbonsäuren", citricAcid, 1.665, "solid", concentratedReagent.citricAcid),
 	organic("Oxalsäure", "Carbonsäuren", covalent("C₂H₂O₄", ["carbon", "carbon", "oxygen", "oxygen", "oxygen", "oxygen"],
 		[[0, 1], [0, 2, 2], [0, 3], [1, 4, 2], [1, 5]], [0, 0, 0, 1, 0, 1]), 1.90, "solid", concentratedReagent.oxalicAcid),
 	// Three acids the library draws but the hand-written acid-base table never
@@ -768,19 +843,42 @@ export const chemicalCatalog: CatalogChemical[] = [
 		[[0, 2], [0, 3], [1, 3], [1, 4]], [0, 0, 0, 0, 0]), "solid", 5.24),
 	pure("Mangan(IV)-oxid", "Oxide", covalent("MnO₂", ["manganese", "oxygen", "oxygen"],
 		[[0, 1, 2], [0, 2, 2]], [0, 0, 0]), "solid", 5.03),
-	pure("Siliciumdioxid", "Oxide", covalent("SiO₂", ["silicon", "oxygen", "oxygen"],
-		[[0, 1, 2], [0, 2, 2]], [0, 0, 0]), "solid", 2.65),
+	pure("Siliciumdioxid", "Oxide", siliconDioxide, "solid", 2.65),
 	aqueous("Wasserstoffperoxidlösung", "Indikatoren und Nachweisreagenzien", peroxide),
 	// Bromine water is the saturated solution of the library's Br₂, 0.21 mol/L
 	// at 25 °C (`evolvedGases.Br2`). The dissolved bromine is a spectator: the
 	// model neither brominates nor oxidises with it.
 	graphSolution("Bromwasser", "Indikatoren und Nachweisreagenzien", "Br₂ (aq)", bromine, 0.21),
-	reference("Lugolsche Lösung", "Indikatoren und Nachweisreagenzien", "I₂ / KI (aq)"),
-	reference("Fehling I", "Indikatoren und Nachweisreagenzien", "CuSO₄ (aq)"),
-	reference("Fehling II", "Indikatoren und Nachweisreagenzien", ""),
-	reference("Benedict-Reagenz", "Indikatoren und Nachweisreagenzien", ""),
+	// Lugol's solution is iodine dissolved in potassium iodide. The model has no
+	// triiodide and keeps iodine as a sparingly soluble solid, so the stock stops
+	// just below the tabulated iodine saturation: a real Lugol's solution is a
+	// tenth of a molar only because the triiodide holds it. Above the saturation
+	// the excess would settle as solid iodine.
+	mixedStock("Lugolsche Lösung", "Indikatoren und Nachweisreagenzien", "I₂ / KI (aq)",
+		[{ molecule: iodine, amount: 1 }, { molecule: potassium, amount: 3 }, { molecule: iodide, amount: 3 }],
+		1.2e-3),
+	// Fehling I is the copper sulfate solution, Fehling II the alkaline Rochelle
+	// salt that keeps the copper dissolved. Both dose their ions; the model has
+	// no copper tartrate complex, so mixing the two precipitates copper(II)
+	// hydroxide — the documented gap of this pair.
+	mixedStock("Fehling I", "Indikatoren und Nachweisreagenzien", "CuSO₄ (aq)",
+		[{ molecule: copper, amount: 1 }, { molecule: sulfate, amount: 1 }], 0.28),
+	mixedStock("Fehling II", "Indikatoren und Nachweisreagenzien", "KNaC₄H₄O₆ / NaOH (aq)",
+		[{ molecule: tartrate, amount: 1 }, { molecule: potassium, amount: 1 },
+			{ molecule: sodium, amount: 1 }, { molecule: naoh, amount: 2 }], 0.5),
+	// Benedict's reagent holds its copper with citrate and carbonate instead of
+	// tartrate. It carries the same gap: the table knows no copper citrate
+	// complex, so the copper precipitates as its hydroxide.
+	mixedStock("Benedict-Reagenz", "Indikatoren und Nachweisreagenzien", "CuSO₄ / Na₃C₆H₅O₇ / Na₂CO₃ (aq)",
+		[{ molecule: copper, amount: 1 }, { molecule: sulfate, amount: 1 }, { molecule: citrate, amount: 1 },
+			{ molecule: carbonate, amount: 1 }, { molecule: sodium, amount: 5 }], 0.05),
 	reference("Schiff-Reagenz", "Indikatoren und Nachweisreagenzien", ""),
-	reference("Tollens-Reagenz", "Indikatoren und Nachweisreagenzien", ""),
+	// Tollens' reagent is the diamminesilver complex that the complex table
+	// already carries, so the bottle doses silver nitrate plus the ammonia and
+	// lye that build it, and the free silver stays far below the oxide product.
+	mixedStock("Tollens-Reagenz", "Indikatoren und Nachweisreagenzien", "[Ag(NH₃)₂]OH (aq)",
+		[{ molecule: silver, amount: 1 }, { molecule: nitrate, amount: 1 },
+			{ molecule: ammonia, amount: 3 }, { molecule: naoh, amount: 2 }], 0.05),
 	// The three indicators are weighed dyes with the library graph on the card.
 	// The model has no colour change, so a portion stays a spectator; methyl
 	// orange is the sodium salt of its sulfonic acid, but the library draws the
@@ -790,7 +888,12 @@ export const chemicalCatalog: CatalogChemical[] = [
 	molecular("Bromthymolblau", "Indikatoren und Nachweisreagenzien", "C₂₇H₂₈Br₂O₅S", 1.25),
 	molecular("Methylorange", "Indikatoren und Nachweisreagenzien", "C₁₄H₁₄N₃NaO₃S", 1.28),
 	reference("Lackmus", "Indikatoren und Nachweisreagenzien", ""),
-	reference("Universalindikator", "Indikatoren und Nachweisreagenzien", ""),
+	// The universal indicator is a mixture of the three dyes above at equal
+	// strength. None of them is ionised in the model, so a portion stays neutral
+	// and only adds its share of organic matter.
+	mixedStock("Universalindikator", "Indikatoren und Nachweisreagenzien", "",
+		[{ molecule: methylOrange, amount: 1 / 3 }, { molecule: bromothymolBlue, amount: 1 / 3 },
+			{ molecule: phenolphthalein, amount: 1 / 3 }], 1.5e-3),
 	reference("Rotkohlsaft", "Indikatoren und Nachweisreagenzien", ""),
 	molecular("Indigo", "Indikatoren und Nachweisreagenzien", "C₁₆H₁₀N₂O₂", 1.199),
 	organic("Glucose", "Kohlenhydrate und Aminosäuren", covalent("C₆H₁₂O₆",
@@ -834,12 +937,39 @@ export const chemicalCatalog: CatalogChemical[] = [
 	// methacrylate counts as polar and mixes with the water.
 	molecular("Styrol", "Kunststoffe und Monomere", "C₈H₈", 0.909, "liquid"),
 	molecular("Methylmethacrylat", "Kunststoffe und Monomere", "C₅H₈O₂", 0.94, "liquid"),
-	reference("Sand", "Stoffgemische", ""),
-	reference("Leitungswasser", "Stoffgemische", ""),
-	reference("Mineralwasser", "Stoffgemische", ""),
-	reference("Haushaltsessig", "Stoffgemische", "CH₃COOH (aq)"),
-	reference("Zitronensaft", "Stoffgemische", ""),
-	reference("Luft", "Stoffgemische", ""),
+	// The household mixtures of the catalog. Each one doses the substances it is
+	// made of, so vinegar acidifies like its acid and lemon juice like its citric
+	// acid, while sand stays the weighed body it is.
+	pure("Sand", "Stoffgemische", siliconDioxide, "solid", 2.65),
+	// Tap water and mineral water carry the permanent hardness of their sulfates
+	// and chlorides and the temporary hardness of their hydrogen carbonates. The
+	// calcium level stays below the calcite product of the model, which has no
+	// kinetics: real hard water is supersaturated with respect to calcite and
+	// stays clear, while this bath would drop it. The mineral water carries the
+	// dissolved carbon dioxide of a bottle, which keeps its pH near neutral.
+	mixedStock("Leitungswasser", "Stoffgemische", "Ca²⁺ / Mg²⁺ / HCO₃⁻ (aq)",
+		[{ molecule: calcium, amount: 2.5e-4 }, { molecule: magnesium, amount: 1.5e-4 },
+			{ molecule: bicarbonate, amount: 7e-4 }, { molecule: sulfate, amount: 3e-5 },
+			{ molecule: chloride, amount: 4e-5 }], 1),
+	mixedStock("Mineralwasser", "Stoffgemische", "Ca²⁺ / Mg²⁺ / HCO₃⁻ / CO₂ (aq)",
+		[{ molecule: calcium, amount: 6e-4 }, { molecule: magnesium, amount: 3e-4 },
+			{ molecule: bicarbonate, amount: 1.6e-3 }, { molecule: sulfate, amount: 5e-5 },
+			{ molecule: chloride, amount: 1e-4 }, { molecule: carbonicAcid, amount: 6e-4 }], 1),
+	mixedStock("Haushaltsessig", "Stoffgemische", "CH₃COOH (aq)",
+		[{ molecule: aceticAcid, amount: 1 }], 0.83),
+	mixedStock("Zitronensaft", "Stoffgemische", "C₆H₈O₇ (aq)",
+		[{ molecule: citricAcid, amount: 1 }], 0.3),
+	// Air is dosed by its volume and lands in the gas space of the target, so a
+	// share of it dissolves and the rest stays above the liquid. Dry air is
+	// 78.08 % nitrogen, 20.95 % oxygen and 0.93 % argon; the 0.04 % of carbon
+	// dioxide is left out, because it would enter the bath as the carbonic-acid
+	// family and change the pH of every vessel it is bubbled through.
+	// Dry air by volume: nitrogen 78.08 %, oxygen 20.95 %, argon 0.93 % and
+	// carbon dioxide 0.04 %. The four shares add up to one portion, so a dose of
+	// one litre really fills one litre of gas space.
+	gasMixture("Luft", "Stoffgemische", "N₂ / O₂ / Ar / CO₂", 28.97,
+		[{ gas: "N2", share: 0.7808 }, { gas: "O2", share: 0.2095 },
+			{ gas: "Ar", share: 0.0093 }, { gas: "CO2", share: 0.0004 }]),
 ];
 
 const catalogAliases: Partial<Record<ChemicalClass, readonly string[]>> = {

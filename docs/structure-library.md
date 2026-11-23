@@ -292,6 +292,92 @@ body without a second liquid phase, the saturated sediment of a weighed dye or
 sugar, the shared starch/cellulose graph, and the styrene layer with its own
 density beside the miscible monomer.
 
+### Implemented example: the mixtures of the library
+
+**Thirteen entries that had only a name now carry a portion.** Petroleum ether,
+Lugol's solution, Fehling I and II, Benedict's reagent, Tollens' reagent, the
+universal indicator, sand, tap water, mineral water, household vinegar, lemon
+juice and air were the last rows of the catalog without a recipe. A mixture has
+no graph of its own, so its recipe names the constituents the library already
+archives: `mixedStock(...)` for an aqueous stock of several solutes,
+`gasMixture(...)` for a bottle of gas, and one archived graph where the entry
+names a single substance.
+
+- **A mixture doses its constituents.** `mixedStock` writes the same
+  `{phase: "liquid", density: 1, aqueousMolar: true, parts: [...]}` that a stock
+  of one substance uses, water first at 55.5 mol/L, so the palette offers the
+  row's own concentration limit and the dose divides the portion by its volume
+  like any other stock. A part the library does not carry makes the row fall
+  back to a reference entry, so a missing graph can never dose silently.
+- **Petroleum ether floats as one band.** The technical fraction is dosed as
+  the n-hexane it is mainly made of, at the middle of its 0.64–0.66 density
+  range: 10 mL in 100 mL water gives a 10.0 mL band of 0.660 g/mL on top of the
+  aqueous phase. Paraffin oil takes the same route with dodecane as the middle
+  of its C₁₀–C₁₆ cut and the density of the oil itself (0.84).
+- **Lugol's solution is an iodine stock below saturation.** One iodine per
+  three iodide and three potassium at a limit of 1.2 mmol/L. The model has no
+  triiodide, so the dissolved I₂ is the tabulated molecule and the limit stays
+  under its solubility, which keeps the stock clear.
+- **Fehling I and II are clear until they meet, and then the model stops
+  short.** Fehling I is 0.28 mol/L copper sulfate (pH 4.82), Fehling II is a
+  Rochelle salt and lye stock at 0.5 mol/L (pH 12.96). Mixed, the bath drops
+  copper(II) hydroxide and acidifies, because the complex table holds only the
+  neutral ammonia ligand and has no copper tartrate: this is the recorded gap of
+  the pair, tested as precipitation rather than as a clear deep-blue solution.
+  Benedict's reagent is the same gap one step further — its citrate does not
+  keep the copper either, so the reagent drops 42 mg of hydroxide per 10 mL,
+  while the tenth of a millimole of carbonate stays dissolved at pH 5.9.
+- **Tollens' reagent keeps its silver.** One silver per three ammonia and two
+  lye: the existing ammonia balance holds the diamminesilver ion, so the
+  reagent reads pH 11.96 without a trace of silver oxide.
+- **The universal indicator is three neutral dyes.** Phenolphthalein,
+  bromothymol blue and methyl orange at a third of a millimole per litre each;
+  the model has no indicator colour, so the stock reads pH 7.000 and the three
+  graphs stay spectators.
+- **Sand is a weighed body, not a solution.** Quartz at 2.65 g/mL gives a
+  26.5 g sediment per 10 mL portion and no liquid band, because a molecular
+  solid has no solubility product.
+- **Tap water and mineral water stay below calcite.** The carbonate of the
+  carbonic-acid family at the bottle's own pH is compared with the calcite
+  product of `chemlib/saltSolubility.ts`; both bottles are chosen under it, so
+  neither throws a sediment. Mineral water also keeps its carbonic acid — 0.6
+  mmol/L is far below the tabulated CO₂ saturation of 34 mmol/L — and the model
+  has no kinetics, so a supersaturated bottle would not effervesce either.
+- **Vinegar and lemon juice are their acid.** 0.83 mol/L acetic acid reads
+  pH 2.94 and 0.3 mol/L citric acid pH 2.38; the second is lower although its
+  portion carries more acid, because the triprotic acid spreads over three
+  steps.
+- **Air hands its shares to the gas space.** Nitrogen 78.08 %, oxygen 20.95 %,
+  argon 0.93 % and carbon dioxide 0.04 % by volume add up to one portion.
+  `prepareGasDose` books each share through `offeredGas`, so a litre of air
+  fills a litre of gas space and the receiving vessel dissolves of each gas what
+  its own Henry row allows: nitrogen saturates at 0.64 mmol/L while oxygen and
+  argon go into solution completely. Argon gained the missing Henry row
+  (1.4 mmol/L) for this.
+- **A mixed stock keeps the lye as lye.** A part that is a solution of sodium
+  hydroxide stays the `naoh` graph, so it enters the acid-base table as the base
+  family instead of being split into ions by a salt identity. The same choice
+  keeps the salts out: `structure-coverage-model.isSalt` demands a
+  `saltSolubility` key after the `Salze` category, so a stock such as
+  `CuSO4(aq)` or `KNaC4H4O6/NaOH(aq)` no longer invents a salt identity for the
+  report.
+
+The structure side follows the recipe: `catalogDefinitions` resolves a mixture
+to its constituents, drops the water and turns a lye part into its two ions, and
+`catalogAqueousStructure` draws the ion pair of a mixed stock or the acid graph
+of a carboxylic-acid stock (`isCarboxylicAcid` reads the carbonyl carbon and the
+hydroxyl oxygen of the definition). That way the builder shows what the palette
+pours, and a mixture that cannot be resolved stays a reference entry.
+
+`tests/mixture-reagents.test.ts` checks the neutral formula unit of all thirteen
+rows, their resolution into builder structures, the petroleum ether band, the
+iodine stock with its 3:1 iodide ratio, the clear Fehling solutions with their
+precipitation on mixing, Benedict's sediment and dissolved carbonate, Tollens'
+dissolved silver, the three indicator dyes, the sand body, both water bottles
+against the calcite product, vinegar and lemon juice against their acids, the
+four shares of air with the dissolved and escaped amounts, and the paraffin oil
+band.
+
 ### Planned extension to all selectable compounds
 
 Implement this as a shared identification, enrichment and admission pipeline for the catalog and manually edited compounds, not as automatic dosing from CIF coordinates:
@@ -306,7 +392,7 @@ Implement this as a shared identification, enrichment and admission pipeline for
 
 `tests/bicarbonate.test.ts` supplies the first regression case: unchanged and edited crystal matching, phase-specific handoff, aqueous preview, dry-salt mass and charge, dissolution and saturation reservoirs, dilution, dry and wet save/restore, pH and sodium stoichiometry, interconversion with carbonate through one acid/base equivalent, and consistent CO₂ release. The NaHCO₃ solubility entry uses the actual fragment SMILES `[O-]C(O)=O` so solid registration and aqueous speciation use the same ion identity.
 
-Step 1 and the coverage part of step 6 run against the live modules: [ChemLab structure coverage](structure-library-coverage.md) lists every selectable compound with its dose, every salt identity with its solid recipe, aqueous stock and reference-only forms, and the remaining gaps. It is generated by `scripts/generate-structure-coverage.ts` from `data/chemicals.ts`, `molecule-builder/catalog.ts` and `chemlib/saltSolubility.ts`; `tests/structure-coverage.test.ts` fails when the tracked report or its JSON falls behind the catalog. The table joins a solid and a stock by the catalog formula without hydrate water, so a pentahydrate reference belongs to the same analytical compound as its anhydrous stock.
+Step 1 and the coverage part of step 6 run against the live modules: [ChemLab structure coverage](structure-library-coverage.md) lists every selectable compound with its dose, every salt identity with its solid recipe, aqueous stock and reference-only forms, and the remaining gaps. 177 of the 181 catalog entries dose; the four remaining reference entries are named with their reason in the report. Litmus, red cabbage juice and Schiff's reagent are dye mixtures whose identity the archive does not give, and the model has no indicator colour to make a representative graph worthwhile; olive oil is an ester oil that the phase split reads as water-miscible, because a molecule with oxygen counts as polar there. It is generated by `scripts/generate-structure-coverage.ts` from `data/chemicals.ts`, `molecule-builder/catalog.ts` and `chemlib/saltSolubility.ts`; `tests/structure-coverage.test.ts` fails when the tracked report or its JSON falls behind the catalog. The table joins a solid and a stock by the catalog formula without hydrate water, so a pentahydrate reference belongs to the same analytical compound as its anhydrous stock.
 
 ## Data and coverage
 

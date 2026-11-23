@@ -91,6 +91,9 @@ export const evolvedGases: Readonly<Record<string, EvolvedGas>> = {
 	CO2: { formula: "CO₂", phase: "gas", family: "C(=O)(O)O", solubility: 0.034 },
 	// N2: 0.64 mmol/L, the reason air stays in the headspace of a water sample
 	N2: { formula: "N₂", phase: "gas", solubility: 6.4e-4 },
+	// Ar: 1.4 mmol/L, close to oxygen and the reason a water sample keeps its
+	// one percent of argon dissolved. Air is dosed as a mixture of these three.
+	Ar: { formula: "Ar", phase: "gas", solubility: 1.4e-3 },
 	// CH4: 1.4 mmol/L
 	CH4: { formula: "CH₄", phase: "gas", solubility: 1.4e-3 },
 	// C2H4: 4.7 mmol/L

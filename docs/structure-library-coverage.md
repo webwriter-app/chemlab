@@ -15,9 +15,9 @@ Reference-only behaviour is an interim gap, not an exemption.
 | Catalog entries | 181 |
 | Entries with a builder structure | 170 |
 | Entries without a builder structure | 11 |
-| Dosed entries (solid or aqueous) | 163 |
+| Dosed entries (solid or aqueous) | 177 |
 | Dosed salt entries | 62 |
-| Molecular reagents outside the salt pairing | 101 |
+| Molecular reagents outside the salt pairing | 115 |
 | Mixtures shown by their constituents | 19 |
 | Salt entries in total | 62 |
 | Salt identities | 31 |
@@ -73,7 +73,7 @@ Reference-only behaviour is an interim gap, not an exemption.
 - Natriumsulfat (Salze) — Na₂SO₄
 - Silbernitrat (Salze) — AgNO₃
 - Zinksulfat (Salze) — ZnSO₄
-- Paraffinöl (Lösungsmittel)
+- Paraffinöl (Lösungsmittel) — C₁₂H₂₆
 - Lackmus (Indikatoren und Nachweisreagenzien)
 - Rotkohlsaft (Indikatoren und Nachweisreagenzien)
 - Schiff-Reagenz (Indikatoren und Nachweisreagenzien)
@@ -81,7 +81,7 @@ Reference-only behaviour is an interim gap, not an exemption.
 
 ## Entries without a dose
 
-- Lösungsmittel: Paraffinöl, Petrolether
-- Indikatoren und Nachweisreagenzien: Benedict-Reagenz, Fehling I, Fehling II, Lackmus, Lugolsche Lösung, Rotkohlsaft, Schiff-Reagenz, Tollens-Reagenz, Universalindikator
-- Fette und Tenside: Olivenöl
-- Stoffgemische: Haushaltsessig, Leitungswasser, Luft, Mineralwasser, Sand, Zitronensaft
+- Lackmus (Indikatoren und Nachweisreagenzien) — Farbstoffgemisch ohne Archivstruktur; das Modell kennt keinen Indikatorumschlag
+- Rotkohlsaft (Indikatoren und Nachweisreagenzien) — Gemisch von Anthocyanen ohne Archivstruktur; das Modell kennt keinen Indikatorumschlag
+- Schiff-Reagenz (Indikatoren und Nachweisreagenzien) — Fuchsin-Schwefeldioxid-Lösung ohne Archivstruktur; eine Vertreterstruktur wäre eine gesetzte Identität
+- Olivenöl (Fette und Tenside) — Esteröl; die Phasenrechnung liest Sauerstoff als polar und damit als mischbar

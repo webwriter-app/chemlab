@@ -43,6 +43,12 @@ function prepareGasDose(recipe: ChemicalRecipe, load: (definition: MoleculeDefin
 			for (const { molecule, amount } of parts) dose.addMolecule(molecule, amount * gasMol);
 		} else if (recipe.gas) {
 			dose.offeredGas.set(recipe.gas, gasMol);
+		} else if (recipe.gases?.length) {
+			// A bottle of air is no single gas: every share goes into the same gas
+			// space, and the vessel dissolves of each what its own Henry row allows.
+			for (const { gas, share } of recipe.gases) {
+				if (share > 0 && Number.isFinite(share)) dose.offeredGas.set(gas, gasMol * share);
+			}
 		} else return;
 		dose.hasLiquidVolume = false;
 		return dose;
