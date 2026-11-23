@@ -125,7 +125,24 @@ A tartrate stock is weakly basic: 0.01 mol in 100 mL reads pH 8.6690 with one K�
 
 `tests/salt-thiosulfate-tartrate.test.ts` checks both rows against `saltIonList` and against the catalog forms, the fragments of a formula unit with their crystal water, dry/stock parity at 0.1 mol/L, the tartrate pH with its fraction and its half-neutralised point, the neutral thiosulfate bath, an overdose that keeps its reservoir at `saturation` and dilution, and the saved `bulk` of both hydrates. `tests/structure-coverage.test.ts` reads both identities as paired.
 
-Remaining salt gaps stay documented rather than filled by guesswork. Iron(II) sulfide is the only reference-only salt left: the catalog holds its builder structure, but there is no solid recipe, no `ksp` row and therefore no saturated stock, because a solubility of a few nanomoles per litre wants a purpose-built entry instead of a rounded one. Every other salt in the catalog now carries a solid and a stock, so no identity holds only one of its two forms. The [coverage report](structure-library-coverage.md) lists the 58 dosed salt entries, the 29 paired identities and the 1 reference-only identity.
+### Open item: iron(II) sulfide
+
+Remaining salt gaps stay documented rather than filled by guesswork. `Eisen(II)-sulfid` is the only reference-only salt left, and the reason is measured rather than assumed.
+
+The constants are known: Ksp 6 · 10⁻¹⁹ ([URI solubility table](https://www.chm.uri.edu/weuler/chmi112/refmater/KspTable.html)) and 4.84 g/mL for troilite ([Wikipedia](https://en.wikipedia.org/wiki/Iron(II)_sulfide)). A dry dose in water does behave: 0.01 mol in 100 mL comes to rest at 3.636 · 10⁻⁷ mol/L dissolved, pH 7.651, with the reservoir holding the ion product at 6.000 · 10⁻¹⁹. That is 470 times √Ksp, because the sulfide protonates through its second stage (pKa 12.9): the dissolved amount is almost entirely H₂S and HS⁻, and only 4.6 · 10⁻⁶ of the family is free S²⁻. The saturated stock would therefore read 0.36 µmol/L, and the current `saturation` rule — round √Ksp down — would undercut it by that same factor.
+
+The acid is the open problem, and the acid is what a school lab doses the solid for. The outcome depends on the order of dosing.
+
+- Solid into acid: 0.01 mol in 120 mL of 1 mol/L hydrochloric acid dissolves completely and the bath moves from pH 0.000 to 0.079, which is exactly the 0.02 mol of protons that `FeS + 2 HCl → FeCl₂ + H₂S` consumes. The reaction runs.
+- Acid onto the settled solid: 0.01 mol in 100 mL water, then 20 mL of 1 mol/L acid, parks at 0.76 % dissolved (6.31 · 10⁻⁴ mol/L), pH 0.781 and an ion product of 1.8 · 10⁻²⁵. The parent acid is only diluted, and the 76 µmol that did dissolve sit as dissolved H₂S at 6.3 · 10⁻⁴ mol/L; no gas leaves the vessel, because hydrogen sulfide stays dissolved at its Henry saturation.
+
+The stall is a spurious fixed point of `equilibrateSalts`, not a missing equilibrium. Each pass extrapolates every ion linearly at the protonation fraction of the pH that holds before it, so the pass solves a frozen problem: at pH 7.65 no applied extent reaches the product and the loop dissolves the reservoir, while at the pH the next pass then reads, the sulfide fraction has moved twelve decades and the same extent overshoots. Instrumented, the passes alternate between 8.33 · 10⁻² mol/L at pH 4.04 (ion product 1.0 · 10⁻¹⁴) and 6.31 · 10⁻⁴ mol/L at pH 0.781 (1.8 · 10⁻²⁵) until `settleSaltsAndHydroxides` gives up after its sixty-fourth pass, which is the number that needs fixing rather than the constants.
+
+Closing the gap needs the pass to re-solve its own protonation instead of extrapolating it — a bracket around the applied extent that iterates the speciation to a fixed point, or a settling pass that keeps the last applied extent and bisects between two known sides of the root. The reaction itself is already there in one order, so the row is a loop fix away rather than a new chemistry model. A row must also spell the sulfide `[S2-]`, the SMILES `saltFragments` builds for the S²⁻ ion; the acid-base family carries both spellings as aliases, but `registerSolidSalt` matches the fragment literally, and a row keyed on `[S-2]` registers no reservoir at all (measured: the whole dose dissociates, ion product 1.9 · 10⁻⁸).
+
+Until that works the builder structure stays the only form: no recipe, no `ksp` row and no stock, in line with the rule that a compound is not granted a dose whose chemistry is unresolved.
+
+Every other salt in the catalog now carries a solid and a stock, so no identity holds only one of its two forms. The [coverage report](structure-library-coverage.md) lists the 58 dosed salt entries, the 29 paired identities and the 1 reference-only identity.
 
 ### Planned extension to all selectable compounds
 
