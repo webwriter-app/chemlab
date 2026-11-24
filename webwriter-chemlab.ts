@@ -2079,10 +2079,10 @@ export class ChemLab extends LitElementWw {
 					image.alt = "";
 					preview.append(image);
 				}
-				const badge = document.createElement("sl-badge");
-				badge.setAttribute("pill", "");
-				badge.textContent = chemical.name;
-				preview.append(badge);
+				// The preview hangs in the shadow root, so its badge must come
+				// from the scoped registry as well.
+				const badge = this.createScoped(html`<sl-badge pill>${chemical.name}</sl-badge>`);
+				if (badge) preview.append(badge);
 				this.containerDiv.append(preview);
 			},
 			move: track,
@@ -2360,6 +2360,31 @@ export class ChemLab extends LitElementWw {
 		return platings;
 	}
 
+	/**
+	 * Fills a node of this shadow root with a template.
+	 *
+	 * `render` builds the template's elements through the document registry
+	 * unless it receives the render options of the host, and this widget
+	 * registers every Shoelace element only in the registry of its shadow root.
+	 * Without the options a tag stays an unknown element that shows its text
+	 * without its pill, and a carousel item keeps no width.
+	 */
+	private renderScoped(node: Node, template: unknown): void {
+		render(template, node as HTMLElement, this.renderOptions);
+	}
+
+	/**
+	 * Builds one element in the registry of the shadow root, for markup that
+	 * leaves the template, such as the badge of the drag preview.
+	 */
+	private createScoped<T extends Element>(template: unknown): T | undefined {
+		const holder = this.ownerDocument.createElement("div");
+		render(template, holder, this.renderOptions);
+		const node = holder.firstElementChild as T | null;
+		node?.remove();
+		return node ?? undefined;
+	}
+
 	private renderVesselCarousel(mixture: chemlib.Mixture, equilibrium?: ReturnType<typeof chemlib.Simulation.getPolyproticEquilibrium>): void {
 		const carousel = this.contextMolInfo;
 		const reset = this.carouselMixture !== mixture;
@@ -2381,7 +2406,7 @@ export class ChemLab extends LitElementWw {
 					</div>
 				</div>
 			</sl-carousel-item>`;
-		render(html`
+		this.renderScoped(carousel, html`
 			${repeat(entries, ({ key }) => key, ({ molecule, species, gas, plating, phase }) => {
 				if (gas) {
 					// A halogen that left the solution is a liquid or a solid
@@ -2435,7 +2460,7 @@ export class ChemLab extends LitElementWw {
 					${showMass && Number.isFinite(mass) ? html`<p>m: ${this.formatAmount(mass, 3)} g</p>` : nothing}
 					${concentration}`, "", molecule);
 			})}
-		`, carousel);
+		`);
 		if (reset) void carousel.updateComplete.then(() => {
 			if (this.carouselMixture === mixture) carousel.goToSlide(0, "instant");
 		});
@@ -2486,7 +2511,7 @@ export class ChemLab extends LitElementWw {
 				}
 			}
 		} else if (component instanceof chemlib.ElectricComponent) {
-			render(keyed(component, this.renderElectricalReadouts(component)), echem);
+			this.renderScoped(echem, keyed(component, this.renderElectricalReadouts(component)));
 		}
 		this.filledCardNodes = { echem, carousel, summary };
 		this.canvas.drawSelection();
@@ -2522,7 +2547,7 @@ export class ChemLab extends LitElementWw {
 		const saturationLabel = saturation && this.message("Salzsättigung: {salt}", { salt: saturation.formula });
 		if (!(amount > 0 && Number.isFinite(amount)) && color === undefined) return;
 		this.contextMixInfo.style.display = "";
-		render(html`
+		this.renderScoped(this.contextMixInfo, html`
 			${amount > 0 && Number.isFinite(amount) ? html`
 				<sl-tag size="small" variant="neutral">${liquid ? `${amount.toFixed(1)} mL` : `${this.formatAmount(amount, 3)} g`}</sl-tag>` : nothing}
 			${color === undefined ? nothing : html`
@@ -2535,7 +2560,7 @@ export class ChemLab extends LitElementWw {
 					<span class="vessel-saturation-circle" aria-hidden="true"
 						style=${`--saturation-fill: ${percent}%`}></span>
 				</sl-tag>` : nothing}
-		`, this.contextMixInfo);
+		`);
 	}
 
 	/**
