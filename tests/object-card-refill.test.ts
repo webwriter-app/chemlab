@@ -105,7 +105,7 @@ test("the lab runs the housekeeping steps before the card fill through runStep",
 	assert.ok(fill > 0, "the update asks the fill rule");
 	const before = updated.slice(0, fill);
 	for (const step of [
-		"write the data block",
+		"save the worksheet state",
 		"prepare the builder chemicals",
 		"rebuild the authored layout",
 		"redraw the selection",

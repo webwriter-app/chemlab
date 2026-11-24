@@ -140,6 +140,7 @@ const MIN_TWO_PANELS_WIDTH = 560;
 const RC_UPDATE_MS = 50;
 const DIAGRAM_PICKER_CLOSE_MS = 2000;
 const CUSTOM_CHEMICAL_GROUP = "custom";
+const AUTHORED_STATE_ATTRIBUTE = "chemlab-state";
 /** A card that carries nothing to derive; the palette passes it as its activation. */
 const nothingToHydrate = () => {};
 
@@ -426,7 +427,6 @@ export class ChemLab extends LitElementWw {
 
 	private dataObserver?: MutationObserver;
 	private savedDataSnapshot: string | null = null;
-	private updatingDataBlock = false;
 	private refreshFromRemoteData = false;
 	/**
 	 * the layout the widget was embedded with, kept for the learner's reset
@@ -735,8 +735,11 @@ export class ChemLab extends LitElementWw {
 		});
 		this.observeBuilder.observe(worksheetScope(this), { childList: true, subtree: true });
 		this.dataObserver = new MutationObserver(() => this.readAuthoredData());
-		this.dataObserver.observe(this, { childList: true, characterData: true, subtree: true, attributes: true, attributeFilter: ["slot", "type"] });
-		if (this.dataBlock()) this.readAuthoredData();
+		this.dataObserver.observe(this, {
+			childList: true, characterData: true, subtree: true, attributes: true,
+			attributeFilter: [AUTHORED_STATE_ATTRIBUTE, "slot", "type"],
+		});
+		this.readAuthoredData();
 		this.observeWorkspaceLayout();
 	}
 
@@ -790,8 +793,8 @@ export class ChemLab extends LitElementWw {
 	protected updated(changed: PropertyValueMap<any>): void {
 		super.updated(changed);
 		if (!this.canAuthor || changed.has("invComponents") || changed.has("chemicalPermissions")) this.permissionTooltip = undefined;
-		if (["availableMolecules", "availableMixtures", "availableComponents", "invComponents", "chemicalPermissions", "savedVesselMixtures"].some((name) => changed.has(name))) {
-			runStep("write the data block", () => this.persistAuthoredData());
+		if (["contentEditable", "availableMolecules", "availableMixtures", "availableComponents", "invComponents", "chemicalPermissions", "savedVesselMixtures"].some((name) => changed.has(name))) {
+			runStep("save the worksheet state", () => this.persistAuthoredData());
 		}
 		if (this.#paletteOpen && this.#paletteTab === "chemicals") {
 			runStep("prepare the builder chemicals", () => this.startBuilderHydration());
@@ -889,10 +892,10 @@ export class ChemLab extends LitElementWw {
 	}
 
 	private readAuthoredData() {
-		const block = this.dataBlock();
-		if (!block || this.updatingDataBlock) return;
+		const raw = this.getAttribute(AUTHORED_STATE_ATTRIBUTE) ?? this.dataBlock()?.textContent;
+		if (raw == null || raw === this.savedDataSnapshot) return;
 		try {
-			const value = JSON.parse(block.textContent ?? "");
+			const value = JSON.parse(raw);
 			if (!value || typeof value !== "object") return;
 			const incoming = JSON.stringify({
 				layoutScale: 1,
@@ -906,14 +909,10 @@ export class ChemLab extends LitElementWw {
 			});
 			if (incoming === this.savedDataSnapshot) return;
 			this.refreshFromRemoteData = this.hasUpdated;
-			this.updatingDataBlock = true;
 			this.applyAuthoredData(value);
 			this.savedDataSnapshot = this.serializeAuthoredData();
-			for (const name of ["availablemolecules", "availablemixtures", "availablecomponents", "invcomponents"]) this.removeAttribute(name);
 		} catch (error) {
-			console.error("Unable to read chemistry lab data block", error);
-		} finally {
-			this.updatingDataBlock = false;
+			console.error("Unable to read the saved chemistry lab state", error);
 		}
 	}
 
@@ -931,21 +930,14 @@ export class ChemLab extends LitElementWw {
 	}
 
 	private persistAuthoredData() {
-		if (!this.isConnected || this.updatingDataBlock) return;
+		if (!this.isConnected || !this.canAuthor) return;
 		const snapshot = this.serializeAuthoredData();
-		if (snapshot === this.savedDataSnapshot) return;
-		let block = this.dataBlock();
-		if (!block) {
-			block = this.ownerDocument.createElement("script");
-			block.type = "application/json";
-			block.slot = "data";
-			this.append(block);
-		}
-		this.updatingDataBlock = true;
-		block.textContent = snapshot.replace(/</g, "\\u003c");
+		if (snapshot === this.savedDataSnapshot && this.hasAttribute(AUTHORED_STATE_ATTRIBUTE)) return;
+		// WebWriter records widget attributes in the document model used to
+		// build the learner preview. A live JSON child can lag behind it.
 		this.savedDataSnapshot = snapshot;
+		this.setAttribute(AUTHORED_STATE_ATTRIBUTE, snapshot);
 		for (const name of ["availablemolecules", "availablemixtures", "availablecomponents", "invcomponents"]) this.removeAttribute(name);
-		this.updatingDataBlock = false;
 	}
 
 	/**
@@ -2954,7 +2946,7 @@ export class ChemLab extends LitElementWw {
 	 * @param {chemlib.ElectricComponent} to - the device it ends at
 	 * @param {?number} [terminalFrom] - the terminal of `from`, first free by default
 	 * @param {?number} [terminalTo] - the terminal of `to`, first free by default
-	 * @param {boolean} [authored=true] - whether to record the cable in the data block
+	 * @param {boolean} [authored=true] - whether to record the cable in the worksheet
 	 * @returns {boolean} whether a cable was laid
 	 */
 	connectElectrical(
@@ -2988,7 +2980,7 @@ export class ChemLab extends LitElementWw {
 	}
 
 	/**
-	 * Records a cable that was laid by dragging in the data block. The partner
+	 * Saves a cable that was laid by dragging in the worksheet. The partner
 	 * lists of the two devices cannot carry it: they name each partner once,
 	 * so a second lead between the same pair would be lost. The cable entry
 	 * names the device on each of its ends instead, which keeps parallel leads
