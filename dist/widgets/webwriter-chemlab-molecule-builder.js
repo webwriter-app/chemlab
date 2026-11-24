@@ -8475,10 +8475,24 @@ fn mainFragment(input: FragmentInput){
 	</svg>`}gc(),zU(),fc(),Wd();var Rde=22;function zde(t){if(!(Number.isFinite(t)&&t>0))return;const e=Rde/t;if(!Number.isFinite(e))return;const o=10**Math.floor(Math.log10(e)),r=Number(([1,2,5,10].find(s=>s*o>=e-o*1e-12)*o).toPrecision(12));return{length:r,pixels:r*t}}var Kde=[{value:"free",label:{_:"Free","de-DE":"Frei"}},{value:"3d",label:{_:"3D only","de-DE":"Nur 3D"}},{value:"2d",label:{_:"2D structure only","de-DE":"Nur Strukturansicht"}}],Wde={type:"select",attribute:"locked-view",label:{_:"View for learners","de-DE":"Ansicht f\xFCr Lernende"},description:{_:"Locks the published widget to one canvas view. The authoring view keeps its 3D/2D switch.","de-DE":"Legt die Ansicht des ver\xF6ffentlichten Widgets fest. In der Bearbeitung bleibt der 3D/2D-Umschalter verf\xFCgbar."},options:Kde},Vde={hideElementPalette:{type:"boolean",attribute:"hide-element-palette",label:{_:"Hide element palette for learners","de-DE":"Elementpalette f\xFCr Lernende ausblenden"},description:{_:"Hides the element list at the left edge.","de-DE":"Blendet die Elementliste am linken Rand aus."}},hideEditingTools:{type:"boolean",attribute:"hide-editing-tools",label:{_:"Hide editing tools for learners","de-DE":"Bearbeitungswerkzeuge f\xFCr Lernende ausblenden"},description:{_:"Hides the new-structure and editing toolbar below the title.","de-DE":"Blendet die Werkzeugleiste f\xFCr neue Strukturen und die Bearbeitung unter dem Titel aus."}},hideCanvasControls:{type:"boolean",attribute:"hide-canvas-controls",label:{_:"Hide canvas controls for learners","de-DE":"Zeichenfl\xE4chen-Steuerung f\xFCr Lernende ausblenden"},description:{_:"Hides the 3D/2D, zoom, fit and fullscreen buttons at the canvas edge.","de-DE":"Blendet 3D/2D-, Zoom-, Einpassen- und Vollbildkn\xF6pfe am Rand der Zeichenfl\xE4che aus."}},hideModelCard:{type:"boolean",attribute:"hide-model-card",label:{_:"Hide model card for learners","de-DE":"Modellkarte f\xFCr Lernende ausblenden"},description:{_:"Hides the formula and display card at the top left.","de-DE":"Blendet die Karte mit Formel und Darstellung oben links aus."}},hideSelectionCard:{type:"boolean",attribute:"hide-selection-card",label:{_:"Hide selection card for learners","de-DE":"Auswahlkarte f\xFCr Lernende ausblenden"},description:{_:"Hides the selected atom's info card at the bottom left.","de-DE":"Blendet die Info-Karte des gew\xE4hlten Atoms unten links aus."}},hideDocumentActions:{type:"boolean",attribute:"hide-document-actions",label:{_:"Hide catalog, file and send for learners","de-DE":"Katalog, Datei und Senden f\xFCr Lernende ausblenden"},description:{_:"Hides catalog, file and send. Preview actions stay available.","de-DE":"Blendet Katalog, Datei und Senden aus. Die Vorschau-Aktionen bleiben verf\xFCgbar."}}};function PY(t){return t==="3d"||t==="2d"?t:"free"}function Jde(t,e,i,o){const r=t==="2d"?"2d":"3d";if(i)return r;const s=PY(e);return s==="free"?r:s==="3d"&&o?"3d":"2d"}function Xde(t,e,i){return!i&&e[t]}var qde=mt`
 	:host {
 		display: block;
-		min-width: 0;
+		inline-size: 800px;
+		max-inline-size: 100%;
+		block-size: 600px;
+		min-inline-size: min(260px, 100%);
+		min-block-size: 280px;
 		color: var(--sl-color-neutral-800, #27272a);
 		font: 14px var(--sl-font-sans, system-ui, sans-serif);
 		container-type: inline-size;
+	}
+	:host(:not(:fullscreen)) {
+		resize: both;
+		overflow: hidden;
+	}
+	:host(.ww-full-width) { inline-size: 100%; }
+	:host(:fullscreen) {
+		inline-size: 100%;
+		block-size: 100%;
+		min-block-size: 0;
 	}
 	[hidden] { display: none !important; }
 	.builder {
@@ -8496,6 +8510,10 @@ fn mainFragment(input: FragmentInput){
 		--palette-heading-badge: #ded3e7;
 		--palette-heading-ink: #4e3e5d;
 		position: relative;
+		display: flex;
+		flex-direction: column;
+		box-sizing: border-box;
+		block-size: 100%;
 		border: 1px solid var(--outline);
 		border-radius: 5px;
 		overflow: hidden;
@@ -8512,6 +8530,7 @@ fn mainFragment(input: FragmentInput){
 		gap: .35rem;
 	}
 	.document, .tools {
+		flex: none;
 		background: var(--control);
 		padding: .35rem .5rem;
 		border-bottom: 1px solid var(--line);
@@ -8632,22 +8651,13 @@ fn mainFragment(input: FragmentInput){
 		display: grid;
 		grid-template-columns: minmax(0, 1fr);
 		grid-template-rows: minmax(0, 1fr);
-		block-size: clamp(32rem, 66vh, 42rem);
+		flex: 1 1 0;
+		min-block-size: 0;
 	}
 	/* The palette is a narrow column: the element list is the only layout, so it
 	   never takes the width of the table. */
 	.workspace[data-palette] { grid-template-columns: clamp(12rem, 34%, 16rem) minmax(0, 1fr); }
 	.workspace[data-collapsed] { grid-template-columns: 0 minmax(0, 1fr); }
-	/* Fullscreen hands the widget the whole screen. The builder takes that box
-	   and the workspace grows into the rest, so the canvas fills the screen
-	   instead of keeping the height it has in an embed. */
-	:host(:fullscreen) { block-size: 100%; }
-	:host(:fullscreen) .builder, .builder:popover-open {
-		display: flex;
-		flex-direction: column;
-		box-sizing: border-box;
-		block-size: 100%;
-	}
 	.builder:popover-open {
 		position: fixed;
 		inset: 0;
@@ -8655,11 +8665,6 @@ fn mainFragment(input: FragmentInput){
 		max-inline-size: none;
 		max-block-size: none;
 		margin: 0;
-	}
-	:host(:fullscreen) .workspace, .builder:popover-open .workspace {
-		flex: 1 1 auto;
-		block-size: auto;
-		min-block-size: 0;
 	}
 	.palette {
 		position: relative;

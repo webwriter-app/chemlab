@@ -3,10 +3,24 @@ import { css } from "lit";
 export const builderStyles = css`
 	:host {
 		display: block;
-		min-width: 0;
+		inline-size: 800px;
+		max-inline-size: 100%;
+		block-size: 600px;
+		min-inline-size: min(260px, 100%);
+		min-block-size: 280px;
 		color: var(--sl-color-neutral-800, #27272a);
 		font: 14px var(--sl-font-sans, system-ui, sans-serif);
 		container-type: inline-size;
+	}
+	:host(:not(:fullscreen)) {
+		resize: both;
+		overflow: hidden;
+	}
+	:host(.ww-full-width) { inline-size: 100%; }
+	:host(:fullscreen) {
+		inline-size: 100%;
+		block-size: 100%;
+		min-block-size: 0;
 	}
 	[hidden] { display: none !important; }
 	.builder {
@@ -24,6 +38,10 @@ export const builderStyles = css`
 		--palette-heading-badge: #ded3e7;
 		--palette-heading-ink: #4e3e5d;
 		position: relative;
+		display: flex;
+		flex-direction: column;
+		box-sizing: border-box;
+		block-size: 100%;
 		border: 1px solid var(--outline);
 		border-radius: 5px;
 		overflow: hidden;
@@ -40,6 +58,7 @@ export const builderStyles = css`
 		gap: .35rem;
 	}
 	.document, .tools {
+		flex: none;
 		background: var(--control);
 		padding: .35rem .5rem;
 		border-bottom: 1px solid var(--line);
@@ -160,22 +179,13 @@ export const builderStyles = css`
 		display: grid;
 		grid-template-columns: minmax(0, 1fr);
 		grid-template-rows: minmax(0, 1fr);
-		block-size: clamp(32rem, 66vh, 42rem);
+		flex: 1 1 0;
+		min-block-size: 0;
 	}
 	/* The palette is a narrow column: the element list is the only layout, so it
 	   never takes the width of the table. */
 	.workspace[data-palette] { grid-template-columns: clamp(12rem, 34%, 16rem) minmax(0, 1fr); }
 	.workspace[data-collapsed] { grid-template-columns: 0 minmax(0, 1fr); }
-	/* Fullscreen hands the widget the whole screen. The builder takes that box
-	   and the workspace grows into the rest, so the canvas fills the screen
-	   instead of keeping the height it has in an embed. */
-	:host(:fullscreen) { block-size: 100%; }
-	:host(:fullscreen) .builder, .builder:popover-open {
-		display: flex;
-		flex-direction: column;
-		box-sizing: border-box;
-		block-size: 100%;
-	}
 	.builder:popover-open {
 		position: fixed;
 		inset: 0;
@@ -183,11 +193,6 @@ export const builderStyles = css`
 		max-inline-size: none;
 		max-block-size: none;
 		margin: 0;
-	}
-	:host(:fullscreen) .workspace, .builder:popover-open .workspace {
-		flex: 1 1 auto;
-		block-size: auto;
-		min-block-size: 0;
 	}
 	.palette {
 		position: relative;
