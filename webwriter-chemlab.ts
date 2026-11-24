@@ -957,7 +957,9 @@ export class ChemLab extends LitElementWw {
 		block.type = "application/json";
 		block.slot = "data";
 		block.dataset.chemlabRevision = String((Number(existing?.dataset.chemlabRevision) || 0) + 1);
-		block.textContent = snapshot.replace(/</g, "\\u003c");
+		// Some WebWriter versions collapse repeated spaces in script text.
+		// The snapshot is compact JSON, so space runs belong to string values.
+		block.textContent = snapshot.replace(/</g, "\\u003c").replace(/ {2,}/g, spaces => "\\u0020".repeat(spaces.length));
 		this.savedDataSnapshot = snapshot;
 		if (existing) existing.replaceWith(block);
 		else this.append(block);
