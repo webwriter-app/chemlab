@@ -307,8 +307,9 @@ class Mixture {
 				}
 			} else {
 				if (
-					nMolecule.smilesString === molecule.smilesString &&
-					nMolecule._totalCharge === molecule._totalCharge
+					nMolecule === molecule ||
+					(nMolecule.smilesString && nMolecule.smilesString === molecule.smilesString &&
+						nMolecule._totalCharge === molecule._totalCharge)
 				) {
 					bIncluded = true;
 					usedIndex = molecule._id;

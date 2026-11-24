@@ -4,15 +4,6 @@ import { test } from "node:test";
 import { StructureManager } from "../chemlib";
 import { Kekule, writeSmiles } from "../chemlib/kekule";
 
-/**
- * Kekulé's SMILES writer is reached through a registry that belongs to the
- * page, not to the widget. A page that loads a second copy of Kekulé can leave
- * that registry empty while ChemLab keeps building molecules, and the failed
- * lookup used to abort the first atom of every structure. The laboratory now
- * writes through the writer itself, so these tests empty the registry and
- * remove the writer class to prove that both stay harmless.
- */
-
 const options = { ignoreImplicitHydrogens: true };
 
 /** Water, built the same way the palette builds a catalog entry. */
@@ -30,6 +21,47 @@ function water() {
 function writerRegistry(): any[] {
 	return (Kekule as any).IO.ChemDataWriterManager._writers;
 }
+
+test("an independently loaded Kekulé keeps existing and new lab molecules compatible", async () => {
+	const existing = water();
+	assert.notEqual((globalThis as any).Kekule, Kekule);
+	const { Kekule: other } = await import("kekule/mod/io");
+	assert.notEqual(other.Molecule, Kekule.Molecule);
+	other.IO.ChemDataWriterManager._writers.length = 0;
+
+	assert.equal(writeSmiles(existing._kekule_obj, options), "O");
+	assert.ok(existing._kekule_obj.calcFormula().getDisplayText());
+	const next = water();
+	const chloride = StructureManager.newMolecule();
+	chloride.addAtom("chlorine", "Cl", -1);
+	const mixture = StructureManager.newMixture();
+	mixture.addMolecule(existing, 1);
+	mixture.addMolecule(next, 1);
+	mixture.addMolecule(chloride, 1);
+
+	assert.deepEqual(mixture._activeMolecules.map(model => model.smilesString), ["O", "[Cl-]"]);
+	assert.equal(mixture._molProperties[existing._id + "n"], 2);
+	assert.ok(Kekule.Render.ChemObjPainter);
+});
+
+test("molecules without a SMILES keep separate entries in a mixture", () => {
+	const first = water();
+	const second = StructureManager.newMolecule();
+	const carbon = second.addAtom("carbon", "C");
+	const oxygen = second.addAtom("oxygen", "O");
+	second.addBond(carbon._id, oxygen._id, 2, 100, "covalent");
+	second.addAtom("oxygen", "O");
+	first.smilesString = second.smilesString = "";
+
+	const mixture = StructureManager.newMixture();
+	mixture.addMolecule(first, 1);
+	mixture.addMolecule(second, 1);
+	mixture.addMolecule(first, 1);
+
+	assert.deepEqual(mixture._activeMolecules, [first, second]);
+	assert.equal(mixture._molProperties[first._id + "n"], 2);
+	assert.equal(mixture._molProperties[second._id + "n"], 1);
+});
 
 test("the writer itself returns the SMILES of the registry", () => {
 	const molecule = water();

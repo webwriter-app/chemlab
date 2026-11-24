@@ -145,7 +145,6 @@ class Molecule {
 	 * @public
 	 */
 	public setSmilesString(): void {
-		this.smilesString = "";
 		this.smilesString = writeSmiles(this._kekule_obj, {
 			ignoreImplicitHydrogens: true,
 		});
