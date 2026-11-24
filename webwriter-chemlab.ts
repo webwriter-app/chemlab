@@ -1992,7 +1992,14 @@ export class ChemLab extends LitElementWw {
 		drop: (pointer: PointerEvent) => void;
 		cleanup: () => void;
 	}): void {
-		if (event.button !== 0 || !event.isPrimary || !this.app || this.canvas.pointerBusy) return;
+		if (event.button !== 0 || !event.isPrimary || !this.app) return;
+		// A fresh primary press can only arrive while an older palette gesture is
+		// still open if that gesture never saw its end. The editor around the
+		// widget may swallow the pointerup, and the controller would then keep
+		// `paletteDrag` set, which makes `pointerBusy` true and refuses every
+		// later drag until the page reloads. Starting over heals that.
+		this.paletteDrag?.abort();
+		if (this.canvas.pointerBusy) return;
 		const button = event.currentTarget as HTMLButtonElement;
 		const view = this.ownerDocument.defaultView;
 		// Keep WebWriter's editor from turning the gesture into a native HTML drag.
@@ -2024,7 +2031,15 @@ export class ChemLab extends LitElementWw {
 				} catch {
 					// Window listeners also handle pointers that cannot be captured.
 				}
-				gesture.start();
+				try {
+					gesture.start();
+				} catch (error) {
+					// A start that throws would leave the tile dragging without a
+					// preview and without a dose, so end the gesture and say why.
+					console.error("Unable to start the palette drag", error);
+					controller.abort();
+					return;
+				}
 			}
 			gesture.move(pointer);
 		}, options);
@@ -2072,7 +2087,12 @@ export class ChemLab extends LitElementWw {
 			start: () => {
 				this.clearObjectSelection();
 				const dose = this.buildDose(chemical.recipe);
-				if (!dose) return;
+				if (!dose) {
+					// Without a dose the gesture has nothing to carry, so say which
+					// chemical has no recipe instead of ending in silence.
+					console.warn("Unable to prepare the dose of", chemical.name);
+					return;
+				}
 				from = { name: chemical.name, recipe: chemical.recipe, dose };
 				const document = this.ownerDocument;
 				preview = document.createElement("div");
