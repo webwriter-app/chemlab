@@ -8,8 +8,11 @@
 
 export type PaletteTab = "components" | "chemicals";
 
+/** The palette tabs in the order they appear, and in the order they are lost. */
+export const PALETTE_TABS: readonly PaletteTab[] = ["components", "chemicals"];
+
 /**
- * The three regions a teacher can take away from learners. The keys are also
+ * The four regions a teacher can take away from learners. The keys are also
  * the option and property names, so a missing region shows up in the entry
  * and in the tests rather than only in the options menu.
  */
@@ -18,8 +21,16 @@ export const INTERFACE_LOCK_OPTIONS = {
 		type: "boolean" as const, group: "interface", attribute: "hide-component-palette",
 		label: { _: "Hide component palette for learners", "de-DE": "Gerätepalette für Lernende ausblenden" },
 		description: {
-			_: "Hides the components tab of the palette. The chemicals tab stays open, because dosing is the only way into the lab.",
-			"de-DE": "Blendet den Reiter „Komponenten“ der Palette aus. Der Reiter „Chemikalien“ bleibt offen, weil sich ohne ihn nichts dosieren lässt.",
+			_: "Hides the components tab of the palette. The chemicals tab stays open, unless it is hidden as well.",
+			"de-DE": "Blendet den Reiter „Komponenten“ der Palette aus. Der Reiter „Chemikalien“ bleibt offen, solange er nicht ebenfalls ausgeblendet ist.",
+		},
+	},
+	hideChemicalPalette: {
+		type: "boolean" as const, group: "interface", attribute: "hide-chemical-palette",
+		label: { _: "Hide chemical palette for learners", "de-DE": "Chemikalienpalette für Lernende ausblenden" },
+		description: {
+			_: "Hides the chemicals tab of the palette. Hiding both palette tabs removes the palette and its handle, and nothing can be dosed any more.",
+			"de-DE": "Blendet den Reiter „Chemikalien“ der Palette aus. Sind beide Reiter ausgeblendet, entfallen Palette und Griff, und es lässt sich nichts mehr dosieren.",
 		},
 	},
 	hideObjectActions: {
@@ -45,16 +56,28 @@ export type InterfaceLocks = Record<InterfaceLockKey, boolean>;
 
 export const UNLOCKED_INTERFACE: InterfaceLocks = {
 	hideComponentPalette: false,
+	hideChemicalPalette: false,
 	hideObjectActions: false,
 	hideDiagramSystem: false,
 };
 
 /**
- * The drawer tab a viewer may land on. Without the component palette only the
- * chemicals remain, whichever tab was open before the lock applied.
+ * The palette tabs a viewer keeps. Each lock takes its own tab, and two locked
+ * tabs leave nothing: the drawer and its handle disappear with them, which is
+ * the only state in which the lab cannot be dosed at all.
  */
-export function paletteTab(tab: PaletteTab, hideComponents: boolean): PaletteTab {
-	return hideComponents ? "chemicals" : tab;
+export function paletteTabs(hideComponents: boolean, hideChemicals: boolean): PaletteTab[] {
+	return PALETTE_TABS.filter(tab => !(tab === "components" ? hideComponents : hideChemicals));
+}
+
+/**
+ * The drawer tab a viewer may land on, or `undefined` when the palette is gone.
+ * A tab that was open before the lock applied falls back to the first tab that
+ * is still there.
+ */
+export function paletteTab(tab: PaletteTab, hideComponents: boolean, hideChemicals = false): PaletteTab | undefined {
+	const tabs = paletteTabs(hideComponents, hideChemicals);
+	return tabs.includes(tab) ? tab : tabs[0];
 }
 
 /**

@@ -88,8 +88,8 @@ import { CanvasController } from "./controllers/CanvasController";
 import type { VesselHint } from "./controllers/VesselView";
 import { guard } from "lit/directives/guard.js";
 import { renderValueControl, valueControlStyles } from "./ui/valueControl";
-import { INTERFACE_LOCK_OPTIONS, hidesRegion, paletteTab,
-	type InterfaceLockKey, type InterfaceLocks } from "./ui/interfaceLocks";
+import { INTERFACE_LOCK_OPTIONS, hidesRegion, paletteTab, paletteTabs,
+	type InterfaceLockKey, type InterfaceLocks, type PaletteTab } from "./ui/interfaceLocks";
 
 type BuilderReview = { structure: Structure; reagent?: string; loading: boolean; analysis?: CompoundAnalysis; facts?: CompoundFacts };
 type SelectedChemical = { key: string; name: string; recipe: DoseRecipe };
@@ -396,6 +396,8 @@ export class ChemLab extends LitElementWw {
 	 */
 	@property({ type: Boolean, reflect: true, attribute: "hide-component-palette" })
 	accessor hideComponentPalette = false;
+	@property({ type: Boolean, reflect: true, attribute: "hide-chemical-palette" })
+	accessor hideChemicalPalette = false;
 	@property({ type: Boolean, reflect: true, attribute: "hide-object-actions" })
 	accessor hideObjectActions = false;
 	@property({ type: Boolean, reflect: true, attribute: "hide-diagram-system" })
@@ -759,7 +761,7 @@ export class ChemLab extends LitElementWw {
 		const panelMax = parseFloat(getComputedStyle(this.ownerDocument.documentElement).fontSize) * 24;
 		const diagramWidth = this.diagramPanelAvailable && this.diagramPanelOpen ? Math.min(width * 0.44, panelMax) : 0;
 		this.teacherDrawerOpen = this.teacherDrawerChoice ?? (width >= STANDARD_CANVAS_WIDTH + panelMax + diagramWidth);
-		if (width < MIN_TWO_PANELS_WIDTH && this.teacherDrawerOpen && this.diagramPanelAvailable) {
+		if (width < MIN_TWO_PANELS_WIDTH && this.#paletteOpen && this.diagramPanelAvailable) {
 			this.diagramPanelOpen = false;
 		}
 	}
@@ -770,7 +772,7 @@ export class ChemLab extends LitElementWw {
 		if (["availableMolecules", "availableMixtures", "availableComponents", "invComponents", "chemicalPermissions", "savedVesselMixtures"].some((name) => changed.has(name))) {
 			this.persistAuthoredData();
 		}
-		if (this.teacherDrawerOpen && paletteTab(this.teacherTab, this.#hides("hideComponentPalette")) === "chemicals") {
+		if (this.#paletteOpen && this.#paletteTab === "chemicals") {
 			this.startBuilderHydration();
 		}
 		if (this.app && !this.canvasLoading && this.refreshFromRemoteData) {
@@ -1450,9 +1452,28 @@ export class ChemLab extends LitElementWw {
 	get #interfaceLocks(): InterfaceLocks {
 		return {
 			hideComponentPalette: this.hideComponentPalette,
+			hideChemicalPalette: this.hideChemicalPalette,
 			hideObjectActions: this.hideObjectActions,
 			hideDiagramSystem: this.hideDiagramSystem,
 		};
+	}
+
+	/** The palette tabs this viewer keeps, in the order they appear. */
+	get #paletteTabs(): PaletteTab[] {
+		return paletteTabs(this.#hides("hideComponentPalette"), this.#hides("hideChemicalPalette"));
+	}
+
+	/**
+	 * The tab the opened palette shows, or `undefined` when both palette locks
+	 * apply. Every reader asks here, so drawer, label and hydration agree.
+	 */
+	get #paletteTab(): PaletteTab | undefined {
+		return paletteTab(this.teacherTab, this.#hides("hideComponentPalette"), this.#hides("hideChemicalPalette"));
+	}
+
+	/** Whether the palette is on screen: opened, and holding at least one tab. */
+	get #paletteOpen(): boolean {
+		return this.teacherDrawerOpen && this.#paletteTab !== undefined;
 	}
 
 	/** Whether a locked region is taken away from this viewer. */
@@ -3041,13 +3062,14 @@ export class ChemLab extends LitElementWw {
 	render() {
 		const diagramAvailable = this.diagramPanelAvailable;
 		const diagramOpen = diagramAvailable && this.diagramPanelOpen;
+		const paletteOpen = this.#paletteOpen;
 		return html`
 			<div
 				id="upper"
 				?data-loading=${!!this.canvasLoading}
 				?data-loading-grid=${!!this.canvasLoading && this.canvas.gridVisible}
 				@keydown=${this.deleteSelection}
-				class=${`${diagramOpen ? "show-diagram-panel" : ""} ${this.teacherDrawerOpen ? "show-palette" : ""}`}
+				class=${`${diagramOpen ? "show-diagram-panel" : ""} ${paletteOpen ? "show-palette" : ""}`}
 			>
 				<div id="canvasArea" aria-busy=${!!this.canvasLoading}>
 					${this.pix_canvas}
@@ -3572,7 +3594,7 @@ export class ChemLab extends LitElementWw {
 		if (open) {
 			this.teacherDrawerChoice = this.teacherDrawerOpen = true;
 			if (this.diagramPanelAvailable && this.containerDiv.clientWidth < MIN_TWO_PANELS_WIDTH) this.diagramPanelOpen = false;
-			if (paletteTab(this.teacherTab, this.#hides("hideComponentPalette")) === "chemicals") this.startBuilderHydration();
+			if (this.#paletteTab === "chemicals") this.startBuilderHydration();
 		} else {
 			this.closeTeacherDrawer();
 		}
@@ -3585,13 +3607,18 @@ export class ChemLab extends LitElementWw {
 	}
 
 	private renderTeacherDrawer() {
-		// A locked component palette leaves the chemicals tab, and the drawer
-		// names what it still holds. The teacher always keeps both.
-		const componentsHidden = this.#hides("hideComponentPalette");
-		const tab = paletteTab(this.teacherTab, componentsHidden);
-		const label = this.message(this.canAuthor ? "Lehrkraft Steuerung" : componentsHidden ? "Chemikalien" : "Komponenten");
-		const showComponents = this.teacherDrawerOpen && tab === "components";
-		const showChemicals = this.teacherDrawerOpen && tab === "chemicals";
+		// A locked palette tab leaves the other one, and the drawer names what it
+		// still holds. The teacher always keeps both; two locked tabs leave no
+		// drawer and no handle, because a handle would open an empty palette.
+		const tabs = this.#paletteTabs;
+		const tab = this.#paletteTab;
+		if (tab === undefined) return nothing;
+		const showComponents = tabs.includes("components");
+		const showChemicals = tabs.includes("chemicals");
+		const label = this.message(this.canAuthor ? "Lehrkraft Steuerung"
+			: tabs.length === 1 ? (showComponents ? "Komponenten" : "Chemikalien") : "Komponenten");
+		const componentsOpen = this.teacherDrawerOpen && tab === "components";
+		const chemicalsOpen = this.teacherDrawerOpen && tab === "chemicals";
 		const selected = this.selectedChemical ? html`
 			<sl-button class="selected-chemical" size="small" @click=${this.clearChemicalSelection}>
 				${this.selectedChemical.name} ×
@@ -3616,29 +3643,33 @@ export class ChemLab extends LitElementWw {
 									this.permissionTooltip = undefined;
 								}
 							}}>
-							${componentsHidden ? nothing : html`
+							${showComponents ? html`
 								<sl-tab slot="nav" panel="components" ?active=${tab === "components"}>${this.message("Komponenten")}</sl-tab>
-							`}
-							<sl-tab slot="nav" panel="chemicals" ?active=${tab === "chemicals"}>${this.message("Chemikalien")}</sl-tab>
-							${componentsHidden ? nothing : html`
+							` : nothing}
+							${showChemicals ? html`
+								<sl-tab slot="nav" panel="chemicals" ?active=${tab === "chemicals"}>${this.message("Chemikalien")}</sl-tab>
+							` : nothing}
+							${showComponents ? html`
 								<sl-tab-panel name="components" ?active=${tab === "components"}>
-									<div class="palette-content">${selected}${guard(showComponents
+									<div class="palette-content">${selected}${guard(componentsOpen
 										? [true, this.lang, this.canAuthor, this.invComponents, this.visibleVariants,
 											this.componentToPlace, this.permissionTooltip]
-										: [false], () => showComponents ? this.renderComponentPalette() : noChange)}</div>
+										: [false], () => componentsOpen ? this.renderComponentPalette() : noChange)}</div>
 								</sl-tab-panel>
-							`}
+							` : nothing}
+							${showChemicals ? html`
 							<sl-tab-panel name="chemicals" ?active=${tab === "chemicals"}>
 								<div class="palette-content">
 									${selected}
-									${guard(showChemicals
+									${guard(chemicalsOpen
 										? [true, this.lang, this.canAuthor, this.chemicalPermissions, this.chemicalQuery,
 											this.chemicalGroup, this.activeChemicalConcentrations, this.selectedChemical?.key,
 											this.openConcentrationMenu, this.builderAvailable, this.builderReferences, this.sessionBuilderReferences,
 											this.savedVesselMixtures, this.sessionVesselMixtures]
-										: [false], () => showChemicals ? this.renderChemicalCatalog() : noChange)}
+										: [false], () => chemicalsOpen ? this.renderChemicalCatalog() : noChange)}
 								</div>
 							</sl-tab-panel>
+							` : nothing}
 						</sl-tab-group>
 					</div>
 				</sl-details>
@@ -4191,6 +4222,9 @@ export class ChemLab extends LitElementWw {
 	}
 
 	private openCustomChemicals(): void {
+		// A locked chemical palette has nowhere to show the new reference; the
+		// structure is still stored, it just stays invisible for the learner.
+		if (this.#hides("hideChemicalPalette")) return;
 		this.chemicalGroup = CUSTOM_CHEMICAL_GROUP;
 		this.chemicalQuery = "";
 		this.openConcentrationMenu = undefined;

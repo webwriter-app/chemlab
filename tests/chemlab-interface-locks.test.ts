@@ -3,9 +3,11 @@ import { readFileSync } from "node:fs";
 import { test } from "node:test";
 import {
 	INTERFACE_LOCK_OPTIONS,
+	PALETTE_TABS,
 	UNLOCKED_INTERFACE,
 	hidesRegion,
 	paletteTab,
+	paletteTabs,
 	type InterfaceLockKey,
 	type InterfaceLocks,
 } from "../ui/interfaceLocks";
@@ -31,17 +33,27 @@ test("interface locks hide each region only outside authoring", () => {
 	}
 });
 
-test("a hidden component palette leaves the chemicals tab", () => {
+test("the palette locks remove one tab each and the whole palette together", () => {
+	assert.deepEqual(PALETTE_TABS, ["components", "chemicals"]);
+	assert.deepEqual(paletteTabs(false, false), ["components", "chemicals"]);
+	assert.deepEqual(paletteTabs(true, false), ["chemicals"]);
+	assert.deepEqual(paletteTabs(false, true), ["components"]);
+	assert.deepEqual(paletteTabs(true, true), []);
+	// The tab that was open stays as long as it exists, otherwise the palette
+	// falls back to the tab still there. Two locks leave no tab to land on.
 	assert.equal(paletteTab("components", false), "components");
 	assert.equal(paletteTab("chemicals", false), "chemicals");
 	assert.equal(paletteTab("components", true), "chemicals");
-	assert.equal(paletteTab("chemicals", true), "chemicals");
+	assert.equal(paletteTab("chemicals", false, true), "components");
+	assert.equal(paletteTab("components", true, true), undefined);
+	assert.equal(paletteTab("chemicals", true, true), undefined);
 });
 
 test("every interface switch carries its own boolean option and attribute", () => {
-	assert.deepEqual(regions, ["hideComponentPalette", "hideObjectActions", "hideDiagramSystem"]);
+	assert.deepEqual(regions, ["hideComponentPalette", "hideChemicalPalette", "hideObjectActions", "hideDiagramSystem"]);
 	const attributes: Record<InterfaceLockKey, string> = {
 		hideComponentPalette: "hide-component-palette",
+		hideChemicalPalette: "hide-chemical-palette",
 		hideObjectActions: "hide-object-actions",
 		hideDiagramSystem: "hide-diagram-system",
 	};
@@ -69,15 +81,27 @@ test("the laboratory publishes the options and guards every learner region", () 
 	}
 });
 
-test("the component palette lock keeps dosing reachable", () => {
-	// Only the components tab disappears; the drawer renames itself and the
-	// chemicals panel stays the active one, otherwise a learner could not dose.
-	assert.match(source, /const componentsHidden = this\.#hides\("hideComponentPalette"\)/);
-	assert.match(source, /const tab = paletteTab\(this\.teacherTab, componentsHidden\)/);
-	assert.match(source, /componentsHidden \? nothing : html`\s*\n\s*<sl-tab slot="nav" panel="components"/);
-	assert.match(source, /componentsHidden \? nothing : html`\s*\n\s*<sl-tab-panel name="components"/);
-	assert.match(source, /<sl-tab-panel name="chemicals" \?active=\$\{tab === "chemicals"\}>/);
-	assert.match(source, /paletteTab\(this\.teacherTab, this\.#hides\("hideComponentPalette"\)\) === "chemicals"/);
+test("the palette locks keep one tab reachable until both are locked", () => {
+	// Each lock takes its own tab; the shared rule names the remaining tab and
+	// the drawer renames itself to it, so a learner still sees where dosing is.
+	assert.match(source, /get #paletteTabs\(\): PaletteTab\[\] \{\s*\n\s*return paletteTabs\(this\.#hides\("hideComponentPalette"\), this\.#hides\("hideChemicalPalette"\)\);/);
+	assert.match(source, /get #paletteTab\(\): PaletteTab \| undefined \{\s*\n\s*return paletteTab\(this\.teacherTab, this\.#hides\("hideComponentPalette"\), this\.#hides\("hideChemicalPalette"\)\);/);
+	assert.match(source, /get #paletteOpen\(\): boolean \{\s*\n\s*return this\.teacherDrawerOpen && this\.#paletteTab !== undefined;/);
+	assert.match(source, /const tabs = this\.#paletteTabs;\s*\n\s*const tab = this\.#paletteTab;\s*\n\s*if \(tab === undefined\) return nothing;/);
+	// A tab renders only while it exists, and its panel goes with it.
+	assert.match(source, /\$\{showComponents \? html`\s*\n\s*<sl-tab slot="nav" panel="components"/);
+	assert.match(source, /\$\{showChemicals \? html`\s*\n\s*<sl-tab slot="nav" panel="chemicals"/);
+	assert.match(source, /\$\{showComponents \? html`\s*\n\s*<sl-tab-panel name="components"/);
+	assert.match(source, /\$\{showChemicals \? html`\s*\n\s*<sl-tab-panel name="chemicals"/);
+	// The grid column, the hydration and the markup share that one predicate:
+	// an opened drawer without a tab would reserve space for an empty palette.
+	assert.match(source, /const paletteOpen = this\.#paletteOpen;/);
+	assert.match(source, /\$\{paletteOpen \? "show-palette" : ""\}/);
+	assert.match(source, /if \(this\.#paletteOpen && this\.#paletteTab === "chemicals"\) \{/);
+	assert.match(source, /if \(this\.#paletteTab === "chemicals"\) this\.startBuilderHydration\(\);/);
+	// A structure sent from the builder cannot open a palette that is gone; it
+	// is still stored, it just stays out of sight for the learner.
+	assert.match(source, /if \(this\.#hides\("hideChemicalPalette"\)\) return;\s*\n\s*this\.chemicalGroup = CUSTOM_CHEMICAL_GROUP;/);
 });
 
 test("the object lock takes the card and vessel pouring, not the keyboard", () => {
