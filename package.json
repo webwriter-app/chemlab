@@ -402,6 +402,7 @@
         },
         "./widgets/webwriter-chemlab": {
             "content": "script?",
+            "whitespace": "pre",
             "label": {
                 "_": "Chemistry Lab",
                 "en": "Chemistry Lab",

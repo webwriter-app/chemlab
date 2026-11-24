@@ -140,7 +140,8 @@ const MIN_TWO_PANELS_WIDTH = 560;
 const RC_UPDATE_MS = 50;
 const DIAGRAM_PICKER_CLOSE_MS = 2000;
 const CUSTOM_CHEMICAL_GROUP = "custom";
-const AUTHORED_STATE_ATTRIBUTE = "chemlab-state";
+const LEGACY_STATE_ATTRIBUTE = "chemlab-state";
+const worksheetWrites = new WeakMap<Document, Promise<void>>();
 /** A card that carries nothing to derive; the palette passes it as its activation. */
 const nothingToHydrate = () => {};
 
@@ -427,6 +428,7 @@ export class ChemLab extends LitElementWw {
 
 	private dataObserver?: MutationObserver;
 	private savedDataSnapshot: string | null = null;
+	private authoredWriteQueued = false;
 	private refreshFromRemoteData = false;
 	/**
 	 * the layout the widget was embedded with, kept for the learner's reset
@@ -737,7 +739,7 @@ export class ChemLab extends LitElementWw {
 		this.dataObserver = new MutationObserver(() => this.readAuthoredData());
 		this.dataObserver.observe(this, {
 			childList: true, characterData: true, subtree: true, attributes: true,
-			attributeFilter: [AUTHORED_STATE_ATTRIBUTE, "slot", "type"],
+			attributeFilter: [LEGACY_STATE_ATTRIBUTE, "slot", "type"],
 		});
 		this.readAuthoredData();
 		this.observeWorkspaceLayout();
@@ -892,7 +894,9 @@ export class ChemLab extends LitElementWw {
 	}
 
 	private readAuthoredData() {
-		const raw = this.getAttribute(AUTHORED_STATE_ATTRIBUTE) ?? this.dataBlock()?.textContent;
+		// A document saved by the previous build can have a newer snapshot in
+		// the attribute than in its script. Migrate it on the next author save.
+		const raw = this.getAttribute(LEGACY_STATE_ATTRIBUTE) ?? this.dataBlock()?.textContent;
 		if (raw == null || raw === this.savedDataSnapshot) return;
 		try {
 			const value = JSON.parse(raw);
@@ -930,13 +934,34 @@ export class ChemLab extends LitElementWw {
 	}
 
 	private persistAuthoredData() {
+		if (!this.isConnected || !this.canAuthor || this.authoredWriteQueued) return;
+		const document = this.ownerDocument;
+		this.authoredWriteQueued = true;
+		// Let the editor's MutationObserver record one widget's replacement
+		// before another widget in the same document changes its script.
+		const previous = worksheetWrites.get(document) ?? Promise.resolve();
+		worksheetWrites.set(document, previous.then(() => {
+			this.authoredWriteQueued = false;
+			if (this.ownerDocument === document) runStep("write the JSON data slot", () => this.writeAuthoredData());
+		}));
+	}
+
+	private writeAuthoredData() {
 		if (!this.isConnected || !this.canAuthor) return;
 		const snapshot = this.serializeAuthoredData();
-		if (snapshot === this.savedDataSnapshot && this.hasAttribute(AUTHORED_STATE_ATTRIBUTE)) return;
-		// WebWriter records widget attributes in the document model used to
-		// build the learner preview. A live JSON child can lag behind it.
+		const existing = this.dataBlock();
+		if (snapshot === this.savedDataSnapshot && existing && !this.hasAttribute(LEGACY_STATE_ATTRIBUTE)) return;
+		// A different revision makes WebWriter replace the script as a whole.
+		// Editing its text causes the editor to treat JSON as document text.
+		const block = this.ownerDocument.createElement("script");
+		block.type = "application/json";
+		block.slot = "data";
+		block.dataset.chemlabRevision = String((Number(existing?.dataset.chemlabRevision) || 0) + 1);
+		block.textContent = snapshot.replace(/</g, "\\u003c");
 		this.savedDataSnapshot = snapshot;
-		this.setAttribute(AUTHORED_STATE_ATTRIBUTE, snapshot);
+		if (existing) existing.replaceWith(block);
+		else this.append(block);
+		this.removeAttribute(LEGACY_STATE_ATTRIBUTE);
 		for (const name of ["availablemolecules", "availablemixtures", "availablecomponents", "invcomponents"]) this.removeAttribute(name);
 	}
 

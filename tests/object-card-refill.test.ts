@@ -100,7 +100,8 @@ test("the report receives the failure itself", () => {
 });
 
 test("the lab runs the housekeeping steps before the card fill through runStep", () => {
-	const updated = source.slice(source.indexOf("protected updated(changed"));
+	const start = source.indexOf("protected updated(changed");
+	const updated = source.slice(start, source.indexOf("private readLegacyArray(", start));
 	const fill = updated.indexOf('cardNeedsFill(changed.has("curr_obj")');
 	assert.ok(fill > 0, "the update asks the fill rule");
 	const before = updated.slice(0, fill);
