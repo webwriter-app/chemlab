@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { test } from "node:test";
-import { cardNeedsFill, type ObjectCardNodes } from "../ui/objectCard";
+import { cardNeedsFill, runStep, type ObjectCardNodes } from "../ui/objectCard";
 
 const source = readFileSync("webwriter-chemlab.ts", "utf8");
 
@@ -69,4 +69,51 @@ test("a failing aqueous solver keeps the contents card", () => {
 	const source_ = source.slice(source.indexOf("private mixtureEquilibrium("), source.indexOf("private renderVesselSummary("));
 	assert.match(source_, /try \{[\s\S]*getPolyproticEquilibrium[\s\S]*\} catch \(error\)/);
 	assert.match(source_, /return undefined;/);
+});
+
+test("a failing step does not stop the steps after it", () => {
+	const seen: string[] = [];
+	const reported: string[] = [];
+	const report = (message: string) => reported.push(message);
+	runStep("write the data block", () => {
+		seen.push("first");
+		throw new Error("boom");
+	}, report);
+	runStep("redraw the selection", () => seen.push("second"), report);
+	assert.deepEqual(seen, ["first", "second"]);
+	assert.deepEqual(reported, ["Unable to write the data block"]);
+});
+
+test("a step that works reports nothing and runs once", () => {
+	let ran = 0;
+	let reports = 0;
+	runStep("place the amount menu", () => { ran += 1; }, () => { reports += 1; });
+	assert.equal(ran, 1);
+	assert.equal(reports, 0);
+});
+
+test("the report receives the failure itself", () => {
+	const failure = new Error("boom");
+	const reported: unknown[] = [];
+	runStep("rebuild the authored layout", () => { throw failure; }, (_message, error) => reported.push(error));
+	assert.deepEqual(reported, [failure]);
+});
+
+test("the lab runs the housekeeping steps before the card fill through runStep", () => {
+	const updated = source.slice(source.indexOf("protected updated(changed"));
+	const fill = updated.indexOf('cardNeedsFill(changed.has("curr_obj")');
+	assert.ok(fill > 0, "the update asks the fill rule");
+	const before = updated.slice(0, fill);
+	for (const step of [
+		"write the data block",
+		"prepare the builder chemicals",
+		"rebuild the authored layout",
+		"redraw the selection",
+		"place the amount menu",
+	]) {
+		assert.ok(before.includes(`runStep("${step}"`), `the step "${step}" runs through runStep`);
+	}
+	// The fill itself stays outside the guard: a throw inside it must surface
+	// instead of being reported as a housekeeping failure.
+	assert.doesNotMatch(updated.slice(fill), /runStep\(/);
 });

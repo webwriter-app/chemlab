@@ -35,3 +35,29 @@ export function cardNeedsFill(
 	return !filled || card.echem !== filled.echem || card.carousel !== filled.carousel ||
 		card.summary !== filled.summary;
 }
+
+/**
+ * Runs one step of the update that must not stop the steps after it.
+ *
+ * The fill that draws the card's contents is the last thing an update does, so
+ * a housekeeping step before it that throws would leave the card with its
+ * heading and nothing below it. That happens in the authoring view alone, where
+ * the widget writes its data block and hydrates the chemicals palette; the
+ * learner view takes neither path and keeps its card. The failure is reported
+ * once and the update continues.
+ *
+ * @param step - What the step does, for the message.
+ * @param work - The step itself.
+ * @param report - Where a failure goes, replaced by a probe that only counts.
+ */
+export function runStep(
+	step: string,
+	work: () => void,
+	report: (message: string, error: unknown) => void = (message, error) => console.error(message, error),
+): void {
+	try {
+		work();
+	} catch (error) {
+		report(`Unable to ${step}`, error);
+	}
+}

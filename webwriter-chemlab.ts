@@ -90,7 +90,7 @@ import { guard } from "lit/directives/guard.js";
 import { renderValueControl, valueControlStyles } from "./ui/valueControl";
 import { INTERFACE_LOCK_OPTIONS, hidesRegion, paletteTab, paletteTabs,
 	type InterfaceLockKey, type InterfaceLocks, type PaletteTab } from "./ui/interfaceLocks";
-import { cardNeedsFill, type ObjectCardNodes } from "./ui/objectCard";
+import { cardNeedsFill, runStep, type ObjectCardNodes } from "./ui/objectCard";
 
 type BuilderReview = { structure: Structure; reagent?: string; loading: boolean; analysis?: CompoundAnalysis; facts?: CompoundFacts };
 type SelectedChemical = { key: string; name: string; recipe: DoseRecipe };
@@ -791,28 +791,33 @@ export class ChemLab extends LitElementWw {
 		super.updated(changed);
 		if (!this.canAuthor || changed.has("invComponents") || changed.has("chemicalPermissions")) this.permissionTooltip = undefined;
 		if (["availableMolecules", "availableMixtures", "availableComponents", "invComponents", "chemicalPermissions", "savedVesselMixtures"].some((name) => changed.has(name))) {
-			this.persistAuthoredData();
+			runStep("write the data block", () => this.persistAuthoredData());
 		}
 		if (this.#paletteOpen && this.#paletteTab === "chemicals") {
-			this.startBuilderHydration();
+			runStep("prepare the builder chemicals", () => this.startBuilderHydration());
 		}
 		if (this.app && !this.canvasLoading && this.refreshFromRemoteData) {
 			this.refreshFromRemoteData = false;
-			if (changed.has("availableComponents")) {
-				// A layout replaced in the worksheet is the configuration the
-				// learner's reset returns to.
-				this.rememberStartingLayout();
-				this.rebuildAuthoredLayout();
-			}
+			runStep("rebuild the authored layout", () => {
+				if (changed.has("availableComponents")) {
+					// A layout replaced in the worksheet is the configuration the
+					// learner's reset returns to.
+					this.rememberStartingLayout();
+					this.rebuildAuthoredLayout();
+				}
+			});
 		}
 		if (this.canvas.selectedObjects.length || changed.has("curr_obj") || changed.has("curr_name") || changed.has("mixtureDraft")) {
-			this.canvas.drawSelection();
+			runStep("redraw the selection", () => this.canvas.drawSelection());
 		}
-		if (changed.has("amountMenu")) this.positionAmountMenu();
+		if (changed.has("amountMenu")) runStep("place the amount menu", () => this.positionAmountMenu());
 		// The card heading comes from the template, its contents from the
 		// imperative fill. A selection change fills it after the render, and so
 		// does a card whose nodes were rebuilt or a fill that never ran, so a
-		// visible card never lacks its contents.
+		// visible card never lacks its contents. The steps above run through
+		// runStep because this fill is the last thing the update does: a failing
+		// housekeeping step in the authoring view would otherwise leave the card
+		// with its heading and nothing below it.
 		const card = this.curr_obj && !this.#hides("hideObjectActions")
 			? { echem: this.contextEchemInfo, carousel: this.contextMolInfo, summary: this.contextMixInfo }
 			: undefined;
