@@ -1,7 +1,7 @@
 import type { AqueousAcidBase } from "./AcidBase";
 import { Atom } from "./Atom";
 import { Bond } from "./Bond";
-import { Kekule } from "./kekule";
+import { Kekule, writeSmiles } from "./kekule";
 
 /**
  * Representation of a molecule
@@ -146,7 +146,7 @@ class Molecule {
 	 */
 	public setSmilesString(): void {
 		this.smilesString = "";
-		this.smilesString = Kekule.IO.saveFormatData(this._kekule_obj, "smi", {
+		this.smilesString = writeSmiles(this._kekule_obj, {
 			ignoreImplicitHydrogens: true,
 		});
 		if (this.smilesString === undefined) {
