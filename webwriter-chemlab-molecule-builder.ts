@@ -35,6 +35,10 @@ import { atomicModelStyles, initialAtomChoices, pauseShellElectronsOption, rende
 	type AtomicModel } from "./molecule-builder/atomic-model";
 import { referenceNucleus } from "./molecule-builder/atomic-nucleus";
 import { gridCell } from "./molecule-builder/canvas-grid";
+import {
+	INTERFACE_LOCK_OPTIONS, builderViewLockOption, effectiveView, hidesRegion, readViewLock,
+	type BuilderView, type InterfaceLockKey, type InterfaceLocks, type ViewLock,
+} from "./molecule-builder/interface-locks";
 import { builderStyles } from "./molecule-builder/styles";
 import type { MoleculeScene } from "./molecule-builder/scene";
 
@@ -137,7 +141,6 @@ export class ChemLabMoleculeBuilder extends LitElementWw {
 		"sl-input": SlInput, "sl-popup": SlPopup, "sl-spinner": SlSpinner, "sl-tag": SlTag,
 	};
 	static options = {
-		pauseShellElectrons: pauseShellElectronsOption,
 		elementSourceId: {
 			type: "string" as const, attribute: "element-source-id",
 			label: { _: "Linked periodic table ID", "de-DE": "ID des verknüpften Periodensystems" },
@@ -146,11 +149,21 @@ export class ChemLabMoleculeBuilder extends LitElementWw {
 			type: "string" as const, attribute: "lab-id",
 			label: { _: "Linked ChemLab ID", "de-DE": "ID des verknüpften ChemLab" },
 		},
+		pauseShellElectrons: pauseShellElectronsOption,
+		lockedView: builderViewLockOption,
+		...INTERFACE_LOCK_OPTIONS,
 	};
 	options = ChemLabMoleculeBuilder.options;
 	@property({ type: String, attribute: "element-source-id", reflect: true }) accessor elementSourceId = "";
 	@property({ type: String, attribute: "lab-id", reflect: true }) accessor labId = "";
 	@property({ type: Boolean, attribute: "pause-shell-electrons", reflect: true }) accessor pauseShellElectrons = false;
+	@property({ type: String, attribute: "locked-view", reflect: true }) accessor lockedView: ViewLock = "free";
+	@property({ type: Boolean, attribute: "hide-element-palette", reflect: true }) accessor hideElementPalette = false;
+	@property({ type: Boolean, attribute: "hide-editing-tools", reflect: true }) accessor hideEditingTools = false;
+	@property({ type: Boolean, attribute: "hide-canvas-controls", reflect: true }) accessor hideCanvasControls = false;
+	@property({ type: Boolean, attribute: "hide-model-card", reflect: true }) accessor hideModelCard = false;
+	@property({ type: Boolean, attribute: "hide-selection-card", reflect: true }) accessor hideSelectionCard = false;
+	@property({ type: Boolean, attribute: "hide-document-actions", reflect: true }) accessor hideDocumentActions = false;
 
 	@state() private accessor draft: Structure = newMolecule();
 	@state() private accessor preview: Structure | undefined;
@@ -172,7 +185,7 @@ export class ChemLabMoleculeBuilder extends LitElementWw {
 	@state() private accessor showLattice = false;
 	@state() private accessor showEdges = true;
 	@state() private accessor showAxes = false;
-	@state() private accessor view: "3d" | "2d" = "3d";
+	@state() private accessor viewState: BuilderView = "3d";
 	@state() private accessor tool: Tool = "orbit";
 	@state() private accessor element = 6;
 	@state() private accessor picked: number | undefined;
@@ -236,6 +249,37 @@ export class ChemLabMoleculeBuilder extends LitElementWw {
 	}
 	get #readonly() { return this.preview !== undefined; }
 
+	/** WebWriter's editing state. Locks are authored here and bind elsewhere. */
+	get canAuthor(): boolean {
+		const editable = this.getAttribute("contenteditable");
+		return editable === "" || editable === "true";
+	}
+
+	/**
+	 * The view the canvas actually shows. A lock only binds outside authoring,
+	 * so both representations stay editable, and a 3D lock falls back to the
+	 * structure drawing when WebGL is unavailable.
+	 */
+	get view(): BuilderView {
+		return effectiveView(this.viewState, this.lockedView, this.canAuthor, this.gpu !== "unavailable");
+	}
+	set view(value: BuilderView) { this.viewState = value; }
+
+	get #interfaceLocks(): InterfaceLocks {
+		return {
+			hideElementPalette: this.hideElementPalette,
+			hideEditingTools: this.hideEditingTools,
+			hideCanvasControls: this.hideCanvasControls,
+			hideModelCard: this.hideModelCard,
+			hideSelectionCard: this.hideSelectionCard,
+			hideDocumentActions: this.hideDocumentActions,
+		};
+	}
+
+	#hides(region: InterfaceLockKey) {
+		return hidesRegion(region, this.#interfaceLocks, this.canAuthor);
+	}
+
 	get #atomicTarget() {
 		const current = this.#current;
 		if (this.inspectedAtom) return this.#atoms.find(atom => atom.id === this.inspectedAtom.id);
@@ -289,7 +333,7 @@ export class ChemLabMoleculeBuilder extends LitElementWw {
 				node instanceof Element && (node.matches(LAB_TAG) || node.querySelector(LAB_TAG))))) this.#refreshLabs();
 		});
 		this.#worksheetObserver.observe(worksheetScope(this), { childList: true, subtree: true });
-		this.#worksheetObserver.observe(this, { attributes: true, attributeFilter: ["class"] });
+		this.#worksheetObserver.observe(this, { attributes: true, attributeFilter: ["class", "contenteditable"] });
 		this.#refreshLabs();
 		this.#bindTable();
 	}
@@ -535,7 +579,7 @@ export class ChemLabMoleculeBuilder extends LitElementWw {
 	}
 
 	#save() {
-		if (this.contentEditable === "false" || !this.isConnected) return;
+		if (!this.canAuthor || !this.isConnected) return;
 		const data = JSON.stringify(this.draft).replace(/</g, "\\u003c");
 		let block = this.#dataBlock();
 		if (!block) {
@@ -1572,7 +1616,14 @@ export class ChemLabMoleculeBuilder extends LitElementWw {
 	render() {
 		const current = this.#current;
 		const lattice = metalCrystal(this.element);
-		const paletteVisible = this.paletteOpen && !this.#readonly;
+		const paletteHidden = this.#hides("hideElementPalette");
+		const editingHidden = this.#hides("hideEditingTools");
+		const canvasHidden = this.#hides("hideCanvasControls");
+		const modelHidden = this.#hides("hideModelCard");
+		const selectionHidden = this.#hides("hideSelectionCard");
+		const documentHidden = this.#hides("hideDocumentActions");
+		const paletteVisible = this.paletteOpen && !this.#readonly && !paletteHidden;
+		const viewLocked = !this.canAuthor && readViewLock(this.lockedView) !== "free";
 		const ionColors = current.kind === "crystal" ? crystalIonColors(current) : new Map<string, number>();
 		const tool = (value: Tool, label: string, icon: unknown) => this.#iconButton({
 			label, icon, pressed: value === this.tool, onClick: () => this.#setTool(value),
@@ -1602,8 +1653,12 @@ export class ChemLabMoleculeBuilder extends LitElementWw {
 		const title = current.catalogKey ? catalogEntry(current.catalogKey)?.name ?? current.name : current.name || formula(current);
 		const toggle = (panel: "catalog" | "file") => () => { this.openPanel = this.openPanel === panel ? undefined : panel; };
 		return html`<div class="builder" contenteditable="false" @keydown=${this.#keys} @toggle=${this.#onViewportToggle}
-			@dragover=${(event: DragEvent) => { if (event.dataTransfer?.types.includes("Files")) event.preventDefault(); }}
-			@drop=${(event: DragEvent) => { if (event.dataTransfer?.files.length) { event.preventDefault(); void this.#openFile(event.dataTransfer.files[0]); } }}>
+			@dragover=${(event: DragEvent) => { if (!documentHidden && event.dataTransfer?.types.includes("Files")) event.preventDefault(); }}
+			@drop=${(event: DragEvent) => {
+				if (documentHidden || !event.dataTransfer?.files.length) return;
+				event.preventDefault();
+				void this.#openFile(event.dataTransfer.files[0]);
+			}}>
 			<header class="document">
 				<div class="document-title">
 					<h5 title=${title}>${title}</h5>
@@ -1612,29 +1667,31 @@ export class ChemLabMoleculeBuilder extends LitElementWw {
 					</sl-tag>
 				</div>
 				<div class="document-actions">
-					${this.#readonly ? newTools : nothing}
-					<sl-popup placement="bottom-end" distance="4" flip shift .active=${this.openPanel === "catalog"}>
-						${this.#iconButton({ slot: "anchor", label: this.#t("ChemLab catalog", "ChemLab-Katalog"), icon: CATALOG_ICON,
-							pressed: this.openPanel === "catalog", expanded: this.openPanel === "catalog", onClick: toggle("catalog") })}
-						${this.#renderCatalog()}
-					</sl-popup>
-					<sl-popup placement="bottom-end" distance="4" flip shift .active=${this.openPanel === "file"}>
-						${this.#iconButton({ slot: "anchor", label: this.#t("File", "Datei"), icon: FILE_ICON,
-							pressed: this.openPanel === "file", expanded: this.openPanel === "file", onClick: toggle("file") })}
-						${this.#renderFileActions()}
-					</sl-popup>
-					${this.#atoms.length && this.labs.length ? html`<sl-popup placement="bottom-end" distance="4" flip shift .active=${this.showLabs}>
-						${this.#iconButton({ slot: "anchor", label: this.#t("Send to ChemLab", "An ChemLab senden"), icon: SEND_ICON,
-							pressed: this.showLabs, expanded: this.showLabs, onClick: this.#prepareSend })}
-						${this.#renderTargetPicker()}
-					</sl-popup>` : nothing}
+					${this.#readonly && !editingHidden ? newTools : nothing}
+					${documentHidden ? nothing : html`
+						<sl-popup placement="bottom-end" distance="4" flip shift .active=${this.openPanel === "catalog"}>
+							${this.#iconButton({ slot: "anchor", label: this.#t("ChemLab catalog", "ChemLab-Katalog"), icon: CATALOG_ICON,
+								pressed: this.openPanel === "catalog", expanded: this.openPanel === "catalog", onClick: toggle("catalog") })}
+							${this.#renderCatalog()}
+						</sl-popup>
+						<sl-popup placement="bottom-end" distance="4" flip shift .active=${this.openPanel === "file"}>
+							${this.#iconButton({ slot: "anchor", label: this.#t("File", "Datei"), icon: FILE_ICON,
+								pressed: this.openPanel === "file", expanded: this.openPanel === "file", onClick: toggle("file") })}
+							${this.#renderFileActions()}
+						</sl-popup>
+						${this.#atoms.length && this.labs.length ? html`<sl-popup placement="bottom-end" distance="4" flip shift .active=${this.showLabs}>
+							${this.#iconButton({ slot: "anchor", label: this.#t("Send to ChemLab", "An ChemLab senden"), icon: SEND_ICON,
+								pressed: this.showLabs, expanded: this.showLabs, onClick: this.#prepareSend })}
+							${this.#renderTargetPicker()}
+						</sl-popup>` : nothing}
+					`}
 					${this.#readonly ? html`
 						<sl-button size="small" variant="primary" @click=${() => this.#closePreview(true)}>${this.#t("Edit copy", "Kopie bearbeiten")}</sl-button>
 						<sl-button size="small" @click=${() => this.#closePreview(false)}>${this.#t("Close preview", "Vorschau schließen")}</sl-button>
 					` : nothing}
 				</div>
 			</header>
-			${this.#readonly ? nothing : html`<div class="tools" role="toolbar" aria-label=${this.#t("Editing tools", "Bearbeitungswerkzeuge")}>
+			${this.#readonly || editingHidden ? nothing : html`<div class="tools" role="toolbar" aria-label=${this.#t("Editing tools", "Bearbeitungswerkzeuge")}>
 				${newTools}
 				<div class="tool-group" role="group" aria-label=${this.#t("Tools", "Werkzeuge")}>
 					${tool("orbit", this.view === "3d" ? this.#t("Orbit", "Drehen") : this.#t("Select", "Auswählen"),
@@ -1662,8 +1719,9 @@ export class ChemLabMoleculeBuilder extends LitElementWw {
 					${this.#renderHistoryButton(false)}${this.#renderHistoryButton(true)}
 				</div>` : nothing}
 			</div>`}
-			<div class="workspace" ?data-palette=${paletteVisible} ?data-collapsed=${!this.#readonly && !paletteVisible}>
-				${this.#readonly ? nothing : html`<aside class="palette">
+			<div class="workspace" ?data-palette=${paletteVisible}
+				?data-collapsed=${!this.#readonly && !paletteHidden && !paletteVisible}>
+				${this.#readonly || paletteHidden ? nothing : html`<aside class="palette">
 					<button class="palette-handle" type="button" aria-expanded=${String(paletteVisible)} aria-controls="palette-body"
 						aria-label=${paletteVisible ? this.#t("Collapse the element palette", "Elementpalette einklappen")
 							: this.#t("Open the element palette", "Elementpalette öffnen")}
@@ -1713,8 +1771,8 @@ export class ChemLabMoleculeBuilder extends LitElementWw {
 							<sl-tag size="small" class="grid-scale" hidden>
 								<span class="grid-scale-line" aria-hidden="true"></span><span class="grid-length"></span>
 							</sl-tag>
-							<div class="view-buttons">
-								${explicitAtom ? nothing : html`
+							${canvasHidden ? nothing : html`<div class="view-buttons">
+								${explicitAtom || viewLocked ? nothing : html`
 									${this.#iconButton({ label: this.#t("3D view", "3D-Ansicht"), icon: CUBE_ICON, pressed: this.view === "3d",
 										disabled: this.gpu === "unavailable", onClick: () => { this.view = "3d"; } })}
 									${this.#iconButton({ label: this.#t("Structure view", "Strukturansicht"), icon: PLANE_ICON, pressed: this.view === "2d",
@@ -1732,10 +1790,11 @@ export class ChemLabMoleculeBuilder extends LitElementWw {
 								${this.#iconButton({ label: this.fullscreen ? this.#t("Exit fullscreen", "Vollbild verlassen")
 									: this.#t("Fullscreen", "Vollbild"), icon: this.fullscreen ? EXIT_FULLSCREEN_ICON : FULLSCREEN_ICON,
 									pressed: !!this.fullscreen, onClick: this.#toggleFullscreen })}
-							</div>
+							</div>`}
 						</div>
-						${atomic ? this.#renderAtomicSummary(atomic) : this.#renderModelSummary(current, ionColors)}
-						${explicitAtom || (atomic && this.#readonly && this.picked === undefined) ? nothing : this.#renderSelectionCard()}
+						${atomic ? this.#renderAtomicSummary(atomic) : modelHidden ? nothing : this.#renderModelSummary(current, ionColors)}
+						${selectionHidden || explicitAtom || (atomic && this.#readonly && this.picked === undefined)
+							? nothing : this.#renderSelectionCard()}
 					</div>
 				</main>
 			</div>
