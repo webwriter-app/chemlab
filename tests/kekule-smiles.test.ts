@@ -1,8 +1,11 @@
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { test } from "node:test";
-import { StructureManager } from "../chemlib";
+import { ComponentManager, ComponentType, Simulation, StructureManager } from "../chemlib";
 import { Kekule, writeSmiles } from "../chemlib/kekule";
+import { chemicalCatalog } from "../data/chemicals";
+import { prepareDose } from "../data/measuredDose";
+import { loadMoleculeDefinition } from "../data/moleculeDefinition";
 
 const options = { ignoreImplicitHydrogens: true };
 
@@ -42,6 +45,22 @@ test("an independently loaded Kekulé keeps existing and new lab molecules compa
 	assert.deepEqual(mixture._activeMolecules.map(model => model.smilesString), ["O", "[Cl-]"]);
 	assert.equal(mixture._molProperties[existing._id + "n"], 2);
 	assert.ok(Kekule.Render.ChemObjPainter);
+});
+
+test("water added to dry salt stays solvent when another Kekulé is loaded", async () => {
+	await import("kekule/mod/io");
+	const vessel = ComponentManager.newChemComponent(ComponentType.Beaker);
+	for (const [name, volumeMl] of [["Natriumchlorid", 1.1], ["Wasser", 18.8]] as const) {
+		const recipe = chemicalCatalog.find(item => item.name === name)?.recipe;
+		assert.ok(recipe, name);
+		const dose = prepareDose(recipe, loadMoleculeDefinition)?.(volumeMl);
+		assert.ok(dose, name);
+		vessel.addContents({ nMix: dose });
+	}
+	const mixture = vessel._content;
+	assert.deepEqual(mixture._activeMolecules.map(model => model.smilesString).sort(), ["O", "[Cl-]", "[Na+]"]);
+	assert.ok(Math.abs(mixture.contentVolume * 1000 - 18.8) < 1e-8);
+	assert.equal(Simulation.getpH(mixture), 7);
 });
 
 test("molecules without a SMILES keep separate entries in a mixture", () => {
