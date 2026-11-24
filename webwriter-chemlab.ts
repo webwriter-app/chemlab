@@ -90,6 +90,7 @@ import { guard } from "lit/directives/guard.js";
 import { renderValueControl, valueControlStyles } from "./ui/valueControl";
 import { INTERFACE_LOCK_OPTIONS, hidesRegion, paletteTab, paletteTabs,
 	type InterfaceLockKey, type InterfaceLocks, type PaletteTab } from "./ui/interfaceLocks";
+import { cardNeedsFill, type ObjectCardNodes } from "./ui/objectCard";
 
 type BuilderReview = { structure: Structure; reagent?: string; loading: boolean; analysis?: CompoundAnalysis; facts?: CompoundFacts };
 type SelectedChemical = { key: string; name: string; recipe: DoseRecipe };
@@ -268,6 +269,14 @@ export class ChemLab extends LitElementWw {
 	private vesselThumbnails = new WeakMap<chemlib.Molecule, { drawer: number; element: Element }>();
 	private vesselNameRequests = new WeakSet<chemlib.Molecule>();
 	private carouselMixture?: chemlib.Mixture;
+	/**
+	 * The card nodes the last successful fill wrote into. A card that was
+	 * rebuilt, or a fill that never ran, leaves the stored nodes behind and the
+	 * next update fills the card again, siehe `cardNeedsFill`.
+	 */
+	private filledCardNodes?: ObjectCardNodes;
+	/** Mixtures whose aqueous solver failed once, so the error is not repeated. */
+	private equilibriumFailures = new WeakSet<chemlib.Mixture>();
 	/**
 	 * status strip element for short, non-blocking notices
 	 *
@@ -800,6 +809,16 @@ export class ChemLab extends LitElementWw {
 			this.canvas.drawSelection();
 		}
 		if (changed.has("amountMenu")) this.positionAmountMenu();
+		// The card heading comes from the template, its contents from the
+		// imperative fill. A selection change fills it after the render, and so
+		// does a card whose nodes were rebuilt or a fill that never ran, so a
+		// visible card never lacks its contents.
+		const card = this.curr_obj && !this.#hides("hideObjectActions")
+			? { echem: this.contextEchemInfo, carousel: this.contextMolInfo, summary: this.contextMixInfo }
+			: undefined;
+		if (cardNeedsFill(changed.has("curr_obj") || changed.has("curr_name"), card, this.filledCardNodes)) {
+			this._updatePopup();
+		}
 		if (changed.has("thumbnailBadges")) {
 			// Thumbnails are cached per molecule; rebuild them so the labels
 			// appear or disappear immediately when the option toggles.
@@ -2429,27 +2448,66 @@ export class ChemLab extends LitElementWw {
 	 */
 	private _updatePopup(recordedEquilibrium?: ReturnType<typeof chemlib.Simulation.getPolyproticEquilibrium>): void {
 		const component = this.curr_obj;
-		if (!component) return;
+		if (!component) {
+			this.filledCardNodes = undefined;
+			return;
+		}
 		// A locked learner interface renders no object card, so the containers
 		// this fills do not exist. Selecting a device still draws the selection.
-		if (this.#hides("hideObjectActions")) return;
-		this.contextEchemInfo.hidden = !(component instanceof chemlib.ElectricComponent);
-		this.contextMolInfo.style.display = "none";
-		this.contextMixInfo.style.display = "none";
+		if (this.#hides("hideObjectActions")) {
+			this.filledCardNodes = undefined;
+			return;
+		}
+		// A fill can run before the first render, and then the `@query`
+		// accessors are still empty. Leaving the record unset lets the next
+		// update try again, instead of leaving a card without its contents.
+		const echem = this.contextEchemInfo as HTMLDivElement | undefined;
+		const carousel = this.contextMolInfo as SlCarousel | undefined;
+		const summary = this.contextMixInfo as HTMLDivElement | undefined;
+		if (!echem || !carousel || !summary) return;
+		echem.hidden = !(component instanceof chemlib.ElectricComponent);
+		carousel.style.display = "none";
+		summary.style.display = "none";
 		if (component instanceof chemlib.ChemComponent) {
 			const mixture = component._content;
 			const hasContents = mixture._activeMolecules.length > 0;
-			const equilibrium = recordedEquilibrium ?? (hasContents && mixture._isSolution && mixture._solutionVolume > 0
-				? chemlib.Simulation.getPolyproticEquilibrium(mixture) : undefined);
+			const equilibrium = recordedEquilibrium ?? (hasContents ? this.mixtureEquilibrium(mixture) : undefined);
 			if (hasContents) {
-				this.contextMolInfo.style.display = "";
-				this.renderVesselCarousel(mixture, equilibrium);
-				this.renderVesselSummary(mixture, equilibrium?.pH);
+				carousel.style.display = "";
+				try {
+					this.renderVesselCarousel(mixture, equilibrium);
+				} catch (error) {
+					console.error("Unable to fill the vessel contents", error);
+				}
+				try {
+					this.renderVesselSummary(mixture, equilibrium?.pH);
+				} catch (error) {
+					console.error("Unable to fill the vessel summary", error);
+				}
 			}
 		} else if (component instanceof chemlib.ElectricComponent) {
-			render(keyed(component, this.renderElectricalReadouts(component)), this.contextEchemInfo);
+			render(keyed(component, this.renderElectricalReadouts(component)), echem);
 		}
+		this.filledCardNodes = { echem, carousel, summary };
 		this.canvas.drawSelection();
+	}
+
+	/**
+	 * The aqueous equilibrium of a mixture, or `undefined` when the solver
+	 * fails. A failure costs the pH line and not the contents card, and it is
+	 * logged once per mixture so a stuck solver cannot flood the console.
+	 */
+	private mixtureEquilibrium(mixture: chemlib.Mixture): ReturnType<typeof chemlib.Simulation.getPolyproticEquilibrium> | undefined {
+		if (!mixture._isSolution || !(mixture._solutionVolume > 0)) return undefined;
+		try {
+			return chemlib.Simulation.getPolyproticEquilibrium(mixture);
+		} catch (error) {
+			if (!this.equilibriumFailures.has(mixture)) {
+				this.equilibriumFailures.add(mixture);
+				console.error("Unable to solve the aqueous equilibrium", error);
+			}
+			return undefined;
+		}
 	}
 
 	private renderVesselSummary(mixture: chemlib.Mixture, pH?: number): void {
@@ -2496,8 +2554,8 @@ export class ChemLab extends LitElementWw {
 		) ?? null;
 		if (this.mixtureDraft?.vessel !== this.curr_obj) this.mixtureDraft = undefined;
 		this.curr_name = name;
-		this._updatePopup();
-
+		// The card is filled after the render, so the fill writes into the nodes
+		// the update puts on screen; siehe `updated`.
 		this.requestUpdate();
 	}
 
