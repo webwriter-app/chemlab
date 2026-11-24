@@ -548,6 +548,7 @@ export class ChemLab extends LitElementWw {
 	private teacherDrawerChoice?: boolean;
 	private workspaceResizeObserver?: ResizeObserver;
 	private workspaceClassObserver?: MutationObserver;
+	private selectVisibilityObserver?: IntersectionObserver;
 	@state() private accessor teacherTab: "components" | "chemicals" = "components";
 	@property({ type: String, attribute: "molecule-builder-id", reflect: true }) accessor moleculeBuilderId = "";
 	@state() private accessor builderAvailable = false;
@@ -758,6 +759,8 @@ export class ChemLab extends LitElementWw {
 		this.workspaceResizeObserver = undefined;
 		this.workspaceClassObserver?.disconnect();
 		this.workspaceClassObserver = undefined;
+		this.selectVisibilityObserver?.disconnect();
+		this.selectVisibilityObserver = undefined;
 		this.dataObserver?.disconnect();
 		this.dataObserver = undefined;
 		super.disconnectedCallback();
@@ -789,6 +792,9 @@ export class ChemLab extends LitElementWw {
 		this.teacherDrawerOpen = this.teacherDrawerChoice ?? (width >= STANDARD_CANVAS_WIDTH + panelMax + diagramWidth);
 		if (width < MIN_TWO_PANELS_WIDTH && this.#paletteOpen && this.diagramPanelAvailable) {
 			this.diagramPanelOpen = false;
+		}
+		for (const select of this.containerDiv.querySelectorAll<SlSelect>("sl-select[open]")) {
+			select.popup.reposition();
 		}
 	}
 
@@ -3208,6 +3214,8 @@ export class ChemLab extends LitElementWw {
 				?data-loading=${!!this.canvasLoading}
 				?data-loading-grid=${!!this.canvasLoading && this.canvas.gridVisible}
 				@keydown=${this.deleteSelection}
+				@sl-show=${this.boundSelectMenu}
+				@sl-hide=${this.unobserveSelectMenu}
 				class=${`${diagramOpen ? "show-diagram-panel" : ""} ${paletteOpen ? "show-palette" : ""}`}
 			>
 				<div id="canvasArea" aria-busy=${!!this.canvasLoading}>
@@ -3405,14 +3413,31 @@ export class ChemLab extends LitElementWw {
 		this.canvas.centerComponents(x === TIME_CHANNEL ? [componentKey(y)] : [componentKey(x), componentKey(y)]);
 	}
 
-	private boundDiagramMenu(event: Event): void {
-		const popup = (event.currentTarget as SlSelect).popup;
-		// The hoisted listbox escapes the drawer scroll area. Keep it inside the widget.
+	private boundSelectMenu(event: Event): void {
+		const select = event.target;
+		if (!(select instanceof SlSelect)) return;
+		const { popup } = select;
+		// Hoisting clears the drawer or card scroll area. The workspace still
+		// bounds the popup, including the listbox's scrollable height.
 		popup.flipBoundary = this.containerDiv;
 		popup.shiftBoundary = this.containerDiv;
 		popup.autoSizeBoundary = this.containerDiv;
+		popup.autoSize = "both";
 		popup.flipPadding = popup.shiftPadding = popup.autoSizePadding = 4;
-		this.diagramMenus.add(popup);
+		if (select.classList.contains("diagram-axis-select")) this.diagramMenus.add(popup);
+		// A hoisted list can stay visible after its trigger scrolls out of the drawer.
+		this.selectVisibilityObserver ??= new IntersectionObserver(entries => {
+			for (const { target, isIntersecting } of entries) {
+				if (isIntersecting || !(target instanceof SlSelect)) continue;
+				this.selectVisibilityObserver?.unobserve(target);
+				void target.hide();
+			}
+		}, { root: this.containerDiv });
+		this.selectVisibilityObserver.observe(select);
+	}
+
+	private unobserveSelectMenu(event: Event): void {
+		if (event.target instanceof SlSelect) this.selectVisibilityObserver?.unobserve(event.target);
 	}
 
 	private renderSelectedDiagramAxes(channels: MeasurementChannel[], selection: ReadonlySet<string>) {
@@ -3430,7 +3455,6 @@ export class ChemLab extends LitElementWw {
 		const select = (axis: "x" | "y", label: string, value?: DiagramAxis, excluded?: DiagramAxis) => html`
 			<sl-select class="diagram-axis-select" size="small" hoist contenteditable="false"
 				label=${this.message(label)} placeholder=${this.message("Datenquelle wählen")}
-				@sl-show=${this.boundDiagramMenu}
 				.value=${live(value ? encodeURIComponent(axisId(value)) : "")}
 				@sl-change=${(event: Event) => {
 					const selected = decodeURIComponent(String((event.currentTarget as SlSelect).value));
@@ -5044,22 +5068,23 @@ export class ChemLab extends LitElementWw {
 						this._updatePopup();
 					}}>${this.message("bestätigen")}</sl-button>` : nothing}
 				${settings && poles ? html`
-					<label>${this.message("Polung")}
-					<select contenteditable="false" @change=${(event: Event) => {
-							const polarity = Number.parseInt((event.currentTarget as HTMLSelectElement).value);
+					<sl-select size="small" hoist contenteditable="false" label=${this.message("Polung")}
+						.value=${live(String(device._polarity ?? 0))} @sl-change=${(event: Event) => {
+							const polarity = Number((event.currentTarget as SlSelect).value);
 							device._polarity = polarity === 1 ? 1 : polarity === -1 ? -1 : 0;
 							this.saveSelectedComponent({ polarity: device._polarity });
 							this.canvas.refreshDeviceDisplay(device);
 							this._updatePopup();
 					}}>
-						<option value="0" ?selected=${device._polarity === 0}>${this.message("automatisch")}</option>
-						<option value="1" ?selected=${device._polarity === 1}>${this.message("Plus an")} ${label(poles.plus)}</option>
-						<option value="-1" ?selected=${device._polarity === -1}>${this.message("Plus an")} ${label(poles.minus)}</option>
-					</select></label>` : nothing}
+						<sl-option value="0">${this.message("automatisch")}</sl-option>
+						<sl-option value="1">${this.message("Plus an")} ${label(poles.plus)}</sl-option>
+						<sl-option value="-1">${this.message("Plus an")} ${label(poles.minus)}</sl-option>
+					</sl-select>` : nothing}
 				${materials.length ? html`
-					<label>${this.message("Elektrodenmaterial")}
-					<select contenteditable="false" @change=${(event: Event) => {
-							const selected = componentVariant((event.currentTarget as HTMLSelectElement).value);
+					<sl-select size="small" hoist contenteditable="false" label=${this.message("Elektrodenmaterial")}
+						placeholder=${device._material ? this.itemName(device._material.name) : this.message("kein Material")}
+						.value=${live(material?.id ?? "")} @sl-change=${(event: Event) => {
+							const selected = componentVariant(String((event.currentTarget as SlSelect).value));
 							if (!selected?.material) return;
 							device._variantId = selected.id;
 							device._material = this.newElectrodeMaterial(selected.material);
@@ -5072,9 +5097,8 @@ export class ChemLab extends LitElementWw {
 							this._updatePopup();
 							this._sendxAPiStatement("submitted", `ElectrodeMaterlial ${formula}:${device._id}`);
 						}}>
-						<option value="" ?selected=${!material} disabled>${device._material ? this.itemName(device._material.name) : this.message("kein Material")}</option>
-						${materials.map(variant => html`<option value=${variant.id} ?selected=${variant === material}>${this.message(variant.material?.name ?? "")}</option>`)}
-					</select></label>` : nothing}
+						${materials.map(variant => html`<sl-option value=${variant.id}>${this.message(variant.material?.name ?? "")}</sl-option>`)}
+					</sl-select>` : nothing}
 				${connections.length ? html`
 					<div class="connection-list">
 						${settings ? html`<span class="connection-list-label">${this.message("Verbunden mit")}</span>` : nothing}

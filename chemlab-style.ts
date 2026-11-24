@@ -1044,6 +1044,8 @@ export const style = css`
 		min-inline-size: min(260px, 100%);
 		min-block-size: 280px;
 		container-type: size;
+		/* Give hoisted menus the same positioning origin across browsers. */
+		contain: layout;
 		font-family: var(--sl-font-sans);
 	}
 	:host(:not(:fullscreen)) {
@@ -1434,7 +1436,7 @@ export const style = css`
 		font-weight: 700;
 		color: var(--diagram-axis-color);
 	}
-	.diagram-axis-select::part(listbox) {
+	sl-select::part(listbox) {
 		scrollbar-width: thin;
 	}
 	.diagram-axis-select sl-divider {
@@ -2058,18 +2060,12 @@ export const style = css`
 		padding: 4px;
 	}
 	.electrical-settings sl-input,
-	.electrical-settings label {
+	.electrical-settings sl-select {
 		display: block;
 		margin-block-end: 4px;
 	}
-	.electrical-settings select {
-		display: block;
-		box-sizing: border-box;
-		inline-size: 100%;
-		min-block-size: var(--sl-input-height-small);
-		border: 1px solid var(--sl-input-border-color);
-		border-radius: var(--sl-input-border-radius-medium);
-		font: inherit;
+	.electrical-settings sl-select::part(combobox) {
+		margin: 0;
 	}
 	#contextMolInfo {
 		inline-size: 12rem;
