@@ -88,6 +88,8 @@ import { CanvasController } from "./controllers/CanvasController";
 import type { VesselHint } from "./controllers/VesselView";
 import { guard } from "lit/directives/guard.js";
 import { renderValueControl, valueControlStyles } from "./ui/valueControl";
+import { INTERFACE_LOCK_OPTIONS, hidesRegion, paletteTab,
+	type InterfaceLockKey, type InterfaceLocks } from "./ui/interfaceLocks";
 
 type BuilderReview = { structure: Structure; reagent?: string; loading: boolean; analysis?: CompoundAnalysis; facts?: CompoundFacts };
 type SelectedChemical = { key: string; name: string; recipe: DoseRecipe };
@@ -181,6 +183,7 @@ export class ChemLab extends LitElementWw {
 
 	static optionGroups = {
 		appearance: { label: { _: "Appearance", "de-DE": "Darstellung" }, collapsible: true, advanced: false },
+		interface: { label: { _: "Learner interface", "de-DE": "Oberfläche für Lernende" }, collapsible: true, advanced: false },
 		analytics: { label: { _: "xAPI", "de-DE": "xAPI" }, collapsible: true, advanced: true },
 	};
 	static options = {
@@ -212,6 +215,7 @@ export class ChemLab extends LitElementWw {
 			group: "analytics",
 			label: { _: "xAPI key", "de-DE": "xAPI-Schlüssel" },
 		},
+		...INTERFACE_LOCK_OPTIONS,
 	};
 	options = ChemLab.options;
 	optionGroups = ChemLab.optionGroups;
@@ -384,10 +388,29 @@ export class ChemLab extends LitElementWw {
 
 	@property({ type: Boolean, reflect: true, attribute: "show-titration-markers" })
 	accessor showTitrationMarkers = false;
+
+	/*
+	 * Learner locks from the options menu, see `ui/interfaceLocks.ts`. Each one
+	 * only takes effect outside the authoring view, so the teacher keeps the
+	 * full laboratory while editing.
+	 */
+	@property({ type: Boolean, reflect: true, attribute: "hide-component-palette" })
+	accessor hideComponentPalette = false;
+	@property({ type: Boolean, reflect: true, attribute: "hide-object-actions" })
+	accessor hideObjectActions = false;
+	@property({ type: Boolean, reflect: true, attribute: "hide-diagram-system" })
+	accessor hideDiagramSystem = false;
+
 	private dataObserver?: MutationObserver;
 	private savedDataSnapshot: string | null = null;
 	private updatingDataBlock = false;
 	private refreshFromRemoteData = false;
+	/**
+	 * the layout the widget was embedded with, kept for the learner's reset
+	 *
+	 * @private
+	 */
+	private startingLayout?: object[];
 
 	/**
 	 * list of all sprites of available components
@@ -747,38 +770,16 @@ export class ChemLab extends LitElementWw {
 		if (["availableMolecules", "availableMixtures", "availableComponents", "invComponents", "chemicalPermissions", "savedVesselMixtures"].some((name) => changed.has(name))) {
 			this.persistAuthoredData();
 		}
-		if (this.teacherDrawerOpen && this.teacherTab === "chemicals") this.startBuilderHydration();
+		if (this.teacherDrawerOpen && paletteTab(this.teacherTab, this.#hides("hideComponentPalette")) === "chemicals") {
+			this.startBuilderHydration();
+		}
 		if (this.app && !this.canvasLoading && this.refreshFromRemoteData) {
 			this.refreshFromRemoteData = false;
 			if (changed.has("availableComponents")) {
-				this.stopDose?.();
-				this.cancelDoseForNavigation();
-				this.closeAmountMenu();
-				this.hideFillMeter();
-				this.simulation.stopExperiments();
-				this.circuits.clear();
-				this.capacitorCharges.clear();
-				this.rcReadouts.clear();
-				this.curr_obj = null;
-				this.curr_name = "";
-				this.curr_stage_index = -1;
-
-				this.measurements.retire([...this.allChemComponents, ...this.allEComponents]);
-				this.canvas.clearSprites();
-				this.allChemComponents = [];
-				this.allEComponents = [];
-				this.pruneDiagramSuggestions();
-
-				this.avComponentsSprites = [];
-				// A replaced layout is a fresh load: it brings devices the startup
-				// load never saw, and it gets the same fit as the first one.
-				void this.canvas.loadTextures(layoutTextureUrls(this.availableComponents)).catch((error) => {
-					console.error("Unable to load the component textures", error);
-				}).then(() => {
-					if (!this.isConnected || !this.app) return;
-					this._loadComponents();
-					this.canvas.fitObjects();
-				});
+				// A layout replaced in the worksheet is the configuration the
+				// learner's reset returns to.
+				this.rememberStartingLayout();
+				this.rebuildAuthoredLayout();
 			}
 		}
 		if (this.canvas.selectedObjects.length || changed.has("curr_obj") || changed.has("curr_name") || changed.has("mixtureDraft")) {
@@ -1013,9 +1014,75 @@ export class ChemLab extends LitElementWw {
 				console.error("Unable to load the component textures", error);
 			}
 			if (this.refreshFromRemoteData) continue;
+			this.rememberStartingLayout();
 			this._loadComponents(undefined, models);
 			return;
 		}
+	}
+
+	/**
+	 * Keeps the embedded layout as the configuration a learner returns to.
+	 * Learners append their own devices to `availableComponents`, so the live
+	 * field is no starting point.
+	 */
+	private rememberStartingLayout(): void {
+		this.startingLayout = JSON.parse(JSON.stringify(this.availableComponents)) as object[];
+	}
+
+	/**
+	 * Rebuilds the stage from `availableComponents`. A layout replaced in the
+	 * worksheet and the learner's reset share this path, so the two cannot
+	 * drift apart.
+	 */
+	private rebuildAuthoredLayout(): void {
+		this.stopDose?.();
+		this.cancelDoseForNavigation();
+		this.closeAmountMenu();
+		this.hideFillMeter();
+		this.simulation.stopExperiments();
+		this.circuits.clear();
+		this.capacitorCharges.clear();
+		this.rcReadouts.clear();
+		this.curr_obj = null;
+		this.curr_name = "";
+		this.curr_stage_index = -1;
+
+		this.measurements.retire([...this.allChemComponents, ...this.allEComponents]);
+		this.canvas.clearSprites();
+		this.allChemComponents = [];
+		this.allEComponents = [];
+		this.pruneDiagramSuggestions();
+
+		this.avComponentsSprites = [];
+		// A replaced layout is a fresh load: it brings devices the startup
+		// load never saw, and it gets the same fit as the first one.
+		void this.canvas.loadTextures(layoutTextureUrls(this.availableComponents)).catch((error) => {
+			console.error("Unable to load the component textures", error);
+		}).then(() => {
+			if (!this.isConnected || !this.app) return;
+			this._loadComponents();
+			this.canvas.fitObjects();
+		});
+	}
+
+	/**
+	 * Returns the canvas to the layout the widget was embedded with. This is
+	 * the learner's way back after trying things out; authoring keeps its own
+	 * history in the worksheet, so the button only appears outside it. The
+	 * measurements and diagrams of the abandoned run go with it, because their
+	 * sources no longer exist.
+	 */
+	resetCanvas(): void {
+		if (this.canAuthor || !this.app || this.canvasLoading || !this.startingLayout) return;
+		this.closeDiagramPicker();
+		this.diagrams.clear();
+		this.measurements.clear();
+		this.suggestionQueue.clear();
+		this.clearObjectSelection();
+		this.availableComponents = JSON.parse(JSON.stringify(this.startingLayout)) as object[];
+		this.rebuildAuthoredLayout();
+		this.requestUpdate();
+		this._sendxAPiStatement("started", "chemlab");
 	}
 
 	requestCanvasRender(): void {
@@ -1378,6 +1445,19 @@ export class ChemLab extends LitElementWw {
 	get canAuthor(): boolean {
 		const editable = this.getAttribute("contenteditable");
 		return editable === "" || editable === "true";
+	}
+
+	get #interfaceLocks(): InterfaceLocks {
+		return {
+			hideComponentPalette: this.hideComponentPalette,
+			hideObjectActions: this.hideObjectActions,
+			hideDiagramSystem: this.hideDiagramSystem,
+		};
+	}
+
+	/** Whether a locked region is taken away from this viewer. */
+	#hides(region: InterfaceLockKey): boolean {
+		return hidesRegion(region, this.#interfaceLocks, this.canAuthor);
 	}
 
 	private isVariantAllowed(variant: ComponentVariant): boolean {
@@ -1773,6 +1853,9 @@ export class ChemLab extends LitElementWw {
 	}
 
 	trackVesselTransfer(source: chemlib.ChemComponent, anchor: PIXI.Container | undefined, point: PIXI.PointData): void {
+		// Pouring from vessel to vessel belongs to the object card a locked
+		// learner interface takes away; dosing from the palette keeps working.
+		if (this.#hides("hideObjectActions")) return;
 		this.trackDragTransfer(anchor, point, { vessel: source });
 	}
 
@@ -1964,6 +2047,7 @@ export class ChemLab extends LitElementWw {
 
 	private openAmountMenu(target: chemlib.ChemComponent, anchor: PIXI.Container, from: AmountSource): void {
 		const transfer = "vessel" in from;
+		if (transfer && this.#hides("hideObjectActions")) return;
 		// A gas brings no volume of its own and takes no room in the vessel, so
 		// its dose is bounded by what one portion from a gas bottle can be. What
 		// the solution dissolves is decided when the dose arrives.
@@ -2313,6 +2397,9 @@ export class ChemLab extends LitElementWw {
 	private _updatePopup(recordedEquilibrium?: ReturnType<typeof chemlib.Simulation.getPolyproticEquilibrium>): void {
 		const component = this.curr_obj;
 		if (!component) return;
+		// A locked learner interface renders no object card, so the containers
+		// this fills do not exist. Selecting a device still draws the selection.
+		if (this.#hides("hideObjectActions")) return;
 		this.contextEchemInfo.hidden = !(component instanceof chemlib.ElectricComponent);
 		this.contextMolInfo.style.display = "none";
 		this.contextMixInfo.style.display = "none";
@@ -3004,7 +3091,7 @@ export class ChemLab extends LitElementWw {
 	}
 
 	private get diagramPanelAvailable(): boolean {
-		return this.diagrams.hasDiagrams;
+		return !this.#hides("hideDiagramSystem") && this.diagrams.hasDiagrams;
 	}
 
 	get isDiagramPanelOpen(): boolean {
@@ -3338,6 +3425,7 @@ export class ChemLab extends LitElementWw {
 	}
 
 	private renderDiagramDetails(available: boolean, open: boolean) {
+		if (this.#hides("hideDiagramSystem")) return nothing;
 		const channels = open || this.diagramPickerOpen || this.suggestionQueue.size ? this.measurements.history.channels : [];
 		const active = this.suggestionQueue.size && this.simulation.hasRunningExperiments
 			? this.diagramSuggestions(channels) : [];
@@ -3415,6 +3503,7 @@ export class ChemLab extends LitElementWw {
 	private renderControlButtons() {
 		const gridLabel = this.message("Canvas-Raster");
 		const resetZoomLabel = this.message("Zoom auf 100 % zurücksetzen");
+		const resetCanvasLabel = this.message("Arbeitsfläche auf den Ausgangsaufbau zurücksetzen");
 		return html`
 				<div id="canvasZoom">
 					<sl-tag id="gridScale" size="small" ?hidden=${!this.canvas.gridVisible}>
@@ -3452,6 +3541,16 @@ export class ChemLab extends LitElementWw {
 							<path d="M6 2H2v4m8-4h4v4m0 4v4h-4m-4 0H2v-4"/>
 						</svg>
 					</sl-button>
+					${this.canAuthor ? nothing : html`
+						<sl-button id="resetCanvas" size="small" title=${resetCanvasLabel}
+							aria-label=${resetCanvasLabel} @click=${() => this.resetCanvas()}>
+							<svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor"
+								stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+								<path d="M13.5 8a5.5 5.5 0 1 1-1.7-3.96"/>
+								<path d="M13.5 2.5v3.4h-3.4"/>
+							</svg>
+						</sl-button>
+					`}
 				</div>
 				<div id="statusStrip" role="status" aria-live="polite" hidden></div>
 		`;
@@ -3473,7 +3572,7 @@ export class ChemLab extends LitElementWw {
 		if (open) {
 			this.teacherDrawerChoice = this.teacherDrawerOpen = true;
 			if (this.diagramPanelAvailable && this.containerDiv.clientWidth < MIN_TWO_PANELS_WIDTH) this.diagramPanelOpen = false;
-			if (this.teacherTab === "chemicals") this.startBuilderHydration();
+			if (paletteTab(this.teacherTab, this.#hides("hideComponentPalette")) === "chemicals") this.startBuilderHydration();
 		} else {
 			this.closeTeacherDrawer();
 		}
@@ -3486,9 +3585,13 @@ export class ChemLab extends LitElementWw {
 	}
 
 	private renderTeacherDrawer() {
-		const label = this.message(this.canAuthor ? "Lehrkraft Steuerung" : "Komponenten");
-		const showComponents = this.teacherDrawerOpen && this.teacherTab === "components";
-		const showChemicals = this.teacherDrawerOpen && this.teacherTab === "chemicals";
+		// A locked component palette leaves the chemicals tab, and the drawer
+		// names what it still holds. The teacher always keeps both.
+		const componentsHidden = this.#hides("hideComponentPalette");
+		const tab = paletteTab(this.teacherTab, componentsHidden);
+		const label = this.message(this.canAuthor ? "Lehrkraft Steuerung" : componentsHidden ? "Chemikalien" : "Komponenten");
+		const showComponents = this.teacherDrawerOpen && tab === "components";
+		const showChemicals = this.teacherDrawerOpen && tab === "chemicals";
 		const selected = this.selectedChemical ? html`
 			<sl-button class="selected-chemical" size="small" @click=${this.clearChemicalSelection}>
 				${this.selectedChemical.name} ×
@@ -3513,15 +3616,19 @@ export class ChemLab extends LitElementWw {
 									this.permissionTooltip = undefined;
 								}
 							}}>
-							<sl-tab slot="nav" panel="components" active>${this.message("Komponenten")}</sl-tab>
-							<sl-tab slot="nav" panel="chemicals">${this.message("Chemikalien")}</sl-tab>
-							<sl-tab-panel name="components" active>
-								<div class="palette-content">${selected}${guard(showComponents
-									? [true, this.lang, this.canAuthor, this.invComponents, this.visibleVariants,
-										this.componentToPlace, this.permissionTooltip]
-									: [false], () => showComponents ? this.renderComponentPalette() : noChange)}</div>
-							</sl-tab-panel>
-							<sl-tab-panel name="chemicals">
+							${componentsHidden ? nothing : html`
+								<sl-tab slot="nav" panel="components" ?active=${tab === "components"}>${this.message("Komponenten")}</sl-tab>
+							`}
+							<sl-tab slot="nav" panel="chemicals" ?active=${tab === "chemicals"}>${this.message("Chemikalien")}</sl-tab>
+							${componentsHidden ? nothing : html`
+								<sl-tab-panel name="components" ?active=${tab === "components"}>
+									<div class="palette-content">${selected}${guard(showComponents
+										? [true, this.lang, this.canAuthor, this.invComponents, this.visibleVariants,
+											this.componentToPlace, this.permissionTooltip]
+										: [false], () => showComponents ? this.renderComponentPalette() : noChange)}</div>
+								</sl-tab-panel>
+							`}
+							<sl-tab-panel name="chemicals" ?active=${tab === "chemicals"}>
 								<div class="palette-content">
 									${selected}
 									${guard(showChemicals
@@ -4439,6 +4546,7 @@ export class ChemLab extends LitElementWw {
 	}
 
 	private renderGroupSummary() {
+		if (this.#hides("hideObjectActions")) return nothing;
 		const selected = this.canvas.selectedObjects;
 		if (!selected.length) return nothing;
 		return html`
@@ -4899,6 +5007,7 @@ export class ChemLab extends LitElementWw {
 	}
 
 	private renderObjectSummary() {
+		if (this.#hides("hideObjectActions")) return nothing;
 		const vessel = this.curr_obj instanceof chemlib.ChemComponent ? this.curr_obj : undefined;
 		const device = this.curr_obj instanceof chemlib.ElectricComponent ? this.curr_obj : undefined;
 		const variant = componentVariant(device?._variantId);

@@ -117,6 +117,19 @@ export class MeasurementRecorder implements ReactiveController {
 		this.scheduleExpiry();
 	}
 
+	/**
+	 * Forgets the whole recording, for instance when the canvas returns to its
+	 * starting layout. The per-component bookkeeping lives in weak maps and
+	 * dies with the components a reset replaces.
+	 */
+	clear(): void {
+		this.history.clear();
+		this.firstDoses.clear();
+		clearTimeout(this.expiry);
+		this.expiry = undefined;
+		this.onChange?.();
+	}
+
 	private recordVessel(vessel: ChemComponent, time: number, equilibrium?: Equilibrium): boolean {
 		const mix = vessel._content;
 		const inventory = new Map<string, { name: string; amount: number; concentration: number | null }>();

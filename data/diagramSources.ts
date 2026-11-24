@@ -31,6 +31,11 @@ export class DiagramSuggestionQueue {
 		if (suggestion) suggestion.dismissed = true;
 	}
 
+	/** Forgets every proposal, dismissed ones included. */
+	clear(): void {
+		this.suggestions.clear();
+	}
+
 	/** Drops a suggestion for good, for instance once it became a diagram. */
 	remove(key: string): boolean {
 		return this.suggestions.delete(key);

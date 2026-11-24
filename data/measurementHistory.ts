@@ -144,6 +144,16 @@ export class MeasurementHistory {
 		}
 	}
 
+	/** Drops every sample, spare archive and transient of this session. */
+	clear(): void {
+		this.series.clear();
+		this.pairs.clear();
+		this.transients = [];
+		this.archivedUntil = 0;
+		this.latestTime = 0;
+		this.channelVersion++;
+	}
+
 	retain(x: string, y: string): void {
 		const key = this.pairKey(x, y);
 		const pair = this.pairs.get(key);

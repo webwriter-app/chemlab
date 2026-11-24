@@ -184,6 +184,24 @@ export class DiagramController implements ReactiveController {
 		this.host.reportXApi("removed", "diagram-" + diagram.id);
 	}
 
+	/** Drops every plot at once, for instance when the canvas starts over. */
+	clear(): void {
+		if (!this.diagrams.length) return;
+		this.host.clearDiagramSourceHighlight();
+		for (const diagram of this.diagrams) {
+			this.host.measurements.history.release(axisId(diagram.x), axisId(diagram.y));
+			if (diagram.card.value) {
+				this.viewport?.unobserve(diagram.card.value);
+				this.observed.delete(diagram.card.value);
+				this.visible.delete(diagram.card.value);
+			}
+			diagram.chart?.destroy();
+		}
+		this.diagrams.length = 0;
+		this.host.closeDiagramPanel();
+		this.host.requestUpdate();
+	}
+
 	renderCards() {
 		const message = this.host.message;
 		return html`<div class="diagram-cards">
