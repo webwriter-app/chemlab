@@ -21,7 +21,8 @@ import { add, fitGeometry, canBond, shapeName, formula, subtract } from "./molec
 import { bondKind, canAssociateIons, ionicCharges, type BondMode } from "./molecule-builder/bond-types";
 import {
 	MAX_ATOMS, MAX_SITES, MAX_FILE_BYTES, cellVectors, fractional, isCell,
-	newCrystal, newMolecule, readStructure, type BondOrder, type Cell, type Point2, type Point3, type Structure,
+	newCrystal, newMolecule, readStructure, withStructureDisplay, withoutStructureDisplay,
+	type BondOrder, type Cell, type Point2, type Point3, type Structure, type StructureDisplay,
 } from "./molecule-builder/structure";
 import { chemicalFormula, crystalSpecies, editableRepeatUnit, empiricalCrystalFormula, freeCrystalSite, lewisDiagram, monatomicCharge } from "./molecule-builder/structure-diagram";
 import { aqueousComponents, hydrationWaters } from "./molecule-builder/aqueous-preview";
@@ -571,16 +572,40 @@ export class ChemLabMoleculeBuilder extends LitElementWw {
 			this.#past = [];
 			this.#future = [];
 			this.#lastSaved = value;
-			this.draft = snapshot.kind === "molecule" ? repairSavedDiagram(snapshot) : snapshot;
+			this.#applyDisplay(snapshot.display);
+			const structure = withoutStructureDisplay(snapshot);
+			this.draft = structure.kind === "molecule" ? repairSavedDiagram(structure) : structure;
 			this.#resetSelection();
 		} catch {
 			this.notice = this.#t("The saved structure could not be opened.", "Die gespeicherte Struktur konnte nicht geöffnet werden.");
 		}
 	}
 
+	/**
+	 * Hydration shells and valence electrons belong to the document, so the
+	 * teacher's switch reaches the learner and survives a reload. Lattice, edges
+	 * and axes stay session state, because they describe the moment and not the
+	 * structure.
+	 */
+	get #viewSwitches(): StructureDisplay {
+		return { hydration: this.showHydration, electrons: this.showElectrons };
+	}
+
+	#applyDisplay(display: StructureDisplay | undefined) {
+		if (!display) return;
+		if (display.hydration !== undefined) this.showHydration = display.hydration;
+		if (display.electrons !== undefined) this.showElectrons = display.electrons;
+	}
+
+	/** A switch is a view choice: it writes the document but adds no undo step. */
+	#setDisplay(display: StructureDisplay) {
+		this.#applyDisplay(display);
+		this.#save();
+	}
+
 	#save() {
 		if (!this.canAuthor || !this.isConnected) return;
-		const data = JSON.stringify(this.draft).replace(/</g, "\\u003c");
+		const data = JSON.stringify(withStructureDisplay(this.draft, this.#viewSwitches)).replace(/</g, "\\u003c");
 		let block = this.#dataBlock();
 		if (!block) {
 			block = this.ownerDocument.createElement("script");
@@ -593,9 +618,10 @@ export class ChemLabMoleculeBuilder extends LitElementWw {
 	}
 
 	#record(next: Structure, fit = false) {
+		this.#applyDisplay(next.display);
 		this.#past = [...this.#past.slice(-59), this.draft];
 		this.#future = [];
-		this.draft = next;
+		this.draft = withoutStructureDisplay(next);
 		this.#fitNext ||= fit;
 		this.notice = "";
 		this.#save();
@@ -1146,7 +1172,9 @@ export class ChemLabMoleculeBuilder extends LitElementWw {
 	}
 
 	#send(target: HTMLElement) {
-		if (!worksheetPeers(this, LAB_TAG).includes(target) || !(target as LabReceiver).reviewBuilderStructure?.(this.#current)) {
+		// Chemistry travels, the view does not: ChemLab reviews the structure itself.
+		const structure = withoutStructureDisplay(this.#current);
+		if (!worksheetPeers(this, LAB_TAG).includes(target) || !(target as LabReceiver).reviewBuilderStructure?.(structure)) {
 			this.notice = this.#t("This ChemLab could not receive the structure.", "Dieses ChemLab konnte die Struktur nicht empfangen.");
 			return;
 		}
@@ -1216,7 +1244,7 @@ export class ChemLabMoleculeBuilder extends LitElementWw {
 		if (this.openPanel !== "file") return nothing;
 		const canDownload = this.#atoms.length > 0;
 		const filename = (this.#current.name || formula(this.#current)).replace(/[^\p{L}\p{N}_-]+/gu, "-").replace(/^-+|-+$/g, "");
-		const downloadUrl = canDownload ? "data:application/json;charset=utf-8," + encodeURIComponent(JSON.stringify(this.#current, null, 2)) : undefined;
+		const downloadUrl = canDownload ? "data:application/json;charset=utf-8," + encodeURIComponent(JSON.stringify(withStructureDisplay(this.#current, this.#viewSwitches), null, 2)) : undefined;
 		return html`<div id="file-actions" class="surface" role="group" aria-label=${this.#t("File", "Datei")}>
 			<input type="file" hidden accept=".json,application/json" @change=${(event: Event) => {
 				const input = event.currentTarget as HTMLInputElement;
@@ -1427,7 +1455,7 @@ export class ChemLabMoleculeBuilder extends LitElementWw {
 						aria-pressed=${String(this.showHydration)} title=${this.#t(
 							"Schematic water orientation around dissolved ions", "Schematische Anordnung von Wasser um gelöste Ionen")}
 						@click=${() => {
-							this.showHydration = !this.showHydration;
+							this.#setDisplay({ hydration: !this.showHydration });
 							this.diagramBox = undefined;
 							this.#fitNext = true;
 						}}>${this.#t("Hydration shells", "Hydrathüllen")}</sl-button>
@@ -1484,7 +1512,7 @@ export class ChemLabMoleculeBuilder extends LitElementWw {
 				${crystal ? toggle(this.#t("Lattice points", "Gitterpunkte"), LATTICE_ICON, this.showLattice, () => { this.showLattice = !this.showLattice; }) : nothing}
 				${crystal ? toggle(this.#t("Axes", "Achsen"), AXES_ICON, this.showAxes, () => { this.showAxes = !this.showAxes; }) : nothing}
 				${current.kind === "molecule" && current.atoms.length && molecular === "sticks" && this.view === "3d" && this.gpu === "ready"
-					? toggle(this.#t("Valence electrons", "Valenzelektronen"), ELECTRONS_ICON, this.showElectrons, () => { this.showElectrons = !this.showElectrons; })
+					? toggle(this.#t("Valence electrons", "Valenzelektronen"), ELECTRONS_ICON, this.showElectrons, () => { this.#setDisplay({ electrons: !this.showElectrons }); })
 					: nothing}
 			</div>` : nothing}
 			<output aria-live="polite" ?hidden=${!status}>${status}</output>

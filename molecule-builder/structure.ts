@@ -16,7 +16,13 @@ export type Bond = { from: number; to: number; order: BondOrder; kind?: "ionic" 
 export type RepeatUnit = { atoms: number[]; ends: [number, number] };
 export type Cell = { lengths: Point3; angles: Point3 };
 export type Site = Omit<Atom, "diagram" | "position"> & { fractional: Point3; occupancy?: number; ion?: string };
-type Base = { version: 1; name: string; catalogKey?: string; source?: string };
+/**
+ * The two display switches a saved structure carries. They belong to the
+ * document, not to the edit history: reopening a structure restores the view
+ * the teacher left it in, while undo keeps the switches untouched.
+ */
+export type StructureDisplay = { hydration?: boolean; electrons?: boolean };
+type Base = { version: 1; name: string; catalogKey?: string; source?: string; display?: StructureDisplay };
 export type Representation = "constituent" | "repeat-unit" | "ionic-components" | "aqueous-ions" | "conformer" | "experimental";
 export type Molecule = Base & {
 	kind: "molecule";
@@ -98,6 +104,26 @@ function numbers(value: unknown, length: number): value is number[] {
 		&& value.every(item => typeof item === "number" && Number.isFinite(item) && Math.abs(item) <= 10_000);
 }
 
+/** Only a real boolean counts as a switch; anything else means "no opinion". */
+function readDisplay(value: unknown): StructureDisplay | undefined {
+	if (!record(value)) return undefined;
+	const display: StructureDisplay = {};
+	if (value.hydration === true || value.hydration === false) display.hydration = value.hydration;
+	if (value.electrons === true || value.electrons === false) display.electrons = value.electrons;
+	return Object.keys(display).length ? display : undefined;
+}
+
+/** Attach the reader's current switches to a structure before it is written. */
+export function withStructureDisplay<T extends Structure>(structure: T, display: StructureDisplay): T {
+	return { ...structure, display } as T;
+}
+
+/** The edit history keeps atoms and bonds; the view switches stay outside it. */
+export function withoutStructureDisplay<T extends Structure>(structure: T): T {
+	const { display: _display, ...rest } = structure;
+	return rest as unknown as T;
+}
+
 function atomIdentity(value: unknown): value is Pick<Atom, "id" | "atomicNumber" | "charge" | "isotope"> & Record<string, unknown> {
 	return record(value) && Number.isSafeInteger(value.id) && Number(value.id) > 0 && isAtomicNumber(value.atomicNumber)
 		&& Number.isInteger(value.charge) && Math.abs(Number(value.charge)) <= 8
@@ -115,6 +141,8 @@ export function readStructure(value: unknown): Structure | null {
 	const base: Base = { version: 1, name: value.name };
 	if (typeof value.catalogKey === "string" && value.catalogKey.length <= 160) base.catalogKey = value.catalogKey;
 	if (typeof value.source === "string" && value.source.length <= 240) base.source = value.source;
+	const display = readDisplay(value.display);
+	if (display) base.display = display;
 	if (value.kind === "molecule") {
 		if (!Array.isArray(value.atoms) || value.atoms.length > MAX_ATOMS
 			|| !Array.isArray(value.bonds) || value.bonds.length > MAX_ATOMS * 4) return null;
