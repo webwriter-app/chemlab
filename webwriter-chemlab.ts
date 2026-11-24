@@ -141,6 +141,18 @@ const DIAGRAM_PICKER_CLOSE_MS = 2000;
 const CUSTOM_CHEMICAL_GROUP = "custom";
 /** A card that carries nothing to derive; the palette passes it as its activation. */
 const nothingToHydrate = () => {};
+
+/** What a palette card adds to its shared frame beside the name tag. */
+type PaletteCardOptions = {
+	/** A chemical card lays out its own body under the preview area. */
+	chemical?: boolean;
+	/** The permission menu the name tag opens. */
+	permissions?: { open: boolean; label: string; toggle: () => void; options: unknown };
+	/** Runs when the card is hovered or focused, e.g. to hydrate it. */
+	activate?: () => void;
+	/** A compact icon beside the name tag, e.g. opening the structure. */
+	action?: unknown;
+};
 const CONTROL_ICONS = {
 	power: "M8 2v5m3.2-3.8a5.5 5.5 0 1 1-6.4 0",
 	drop: "M8 2.4c1.4 2.2 4 4.5 4 7a4 4 0 1 1-8 0c0-2.5 2.6-4.8 4-7Z",
@@ -2341,12 +2353,12 @@ export class ChemLab extends LitElementWw {
 				<div class="vessel-carousel-card ${cardClass}">
 					${thumbnail}
 					<div class="vessel-carousel-quantities">
-						<h5 title=${title}>${title}</h5>
+						<div class="vessel-carousel-title">
+							<h5 title=${title}>${title}</h5>
+							${model && this.builderAvailable
+								? this.renderStructureAction(() => this.openSpeciesInBuilder(model, title)) : nothing}
+						</div>
 						${details}
-						${model && this.builderAvailable ? html`
-							<button class="vessel-structure-link" type="button" @click=${() => this.openSpeciesInBuilder(model, title)}>
-								${this.builderText("View structure", "Struktur ansehen")}
-							</button>` : nothing}
 					</div>
 				</div>
 			</sl-carousel-item>`;
@@ -3809,8 +3821,8 @@ export class ChemLab extends LitElementWw {
 	}
 
 	private renderPaletteCard(name: string, variant: ReturnType<typeof this.palettePermissionVariant>,
-		badge: unknown, body: unknown, chemical = false, permissions?: { open: boolean; label: string; toggle: () => void; options: unknown },
-		activate: () => void = nothingToHydrate) {
+		badge: unknown, body: unknown, options: PaletteCardOptions = {}) {
+		const { chemical = false, permissions, activate = nothingToHydrate, action } = options;
 		return html`
 			<div class="palette-card${chemical ? " palette-card-chemical" : ""}" role="group" aria-label=${name}
 				@pointerenter=${activate} @focusin=${activate}>
@@ -3829,6 +3841,7 @@ export class ChemLab extends LitElementWw {
 									<path d="m2.5 4.5 3.5 3 3.5-3"/>
 								</svg></sl-tag>
 							</button>` : html`<sl-tag size="small" variant=${this.canAuthor ? variant : "neutral"} title=${name}>${name}</sl-tag>`}
+						${action ?? nothing}
 					</div>
 					${this.canAuthor ? badge : nothing}
 				</div>
@@ -4055,10 +4068,9 @@ export class ChemLab extends LitElementWw {
 				${preview}
 				${this.canAuthor ? this.renderChemicalPermission(item.name, name) : nothing}
 			</div>`;
-		const view = this.builderAvailable ? html`<sl-button class="structure-link" size="small" @click=${() => this.openInBuilder({ key: item.name })}>
-			${this.builderText("View structure", "Struktur ansehen")}
-		</sl-button>` : nothing;
-		return this.renderPaletteCard(name, variant, badge, html`${body}${view}`, true, permissions);
+		const action = this.builderAvailable
+			? this.renderStructureAction(() => this.openInBuilder({ key: item.name })) : nothing;
+		return this.renderPaletteCard(name, variant, badge, body, { chemical: true, permissions, action });
 	}
 
 	private renderSavedMixture(item: SavedMixture) {
@@ -4075,7 +4087,7 @@ export class ChemLab extends LitElementWw {
 			</div>
 			${removable ? html`<div class="custom-card-actions">${this.renderSelectionDeleteButton(
 				() => this.removeSavedMixture(item), this.builderText("Delete mixture", "Gemisch löschen"))}</div>` : nothing}
-		`, true);
+		`, { chemical: true });
 	}
 
 	private builderText(en: string, de: string) {
@@ -4367,13 +4379,14 @@ export class ChemLab extends LitElementWw {
 			${item.analysis ? this.renderBuilderFacts(item.analysis, facts,
 				item.phase === "solid" ? undefined : item.stockConcentration) : nothing}
 			<div class="custom-card-actions">
-				<sl-button size="small" class="structure-link" @click=${() => this.openInBuilder({ structure })}>
-					${this.builderText("View structure", "Struktur ansehen")}
-				</sl-button>
 				${this.canAuthor || this.sessionBuilderReferences.includes(item) ? this.renderSelectionDeleteButton(
 					remove, this.builderText("Delete structure", "Struktur löschen")) : nothing}
 			</div>
-		`, true, undefined, () => this.hydrateBuilderReference(item));
+		`, {
+			chemical: true,
+			activate: () => this.hydrateBuilderReference(item),
+			action: this.renderStructureAction(() => this.openInBuilder({ structure })),
+		});
 	}
 
 	/**
@@ -4645,6 +4658,32 @@ export class ChemLab extends LitElementWw {
 		}
 		summary.style.transform = `translate(${Math.max(padding, Math.min(x, maxX))}px, ${Math.max(padding, Math.min(y, maxY))}px)`;
 		summary.setAttribute("data-anchored", "");
+	}
+
+	/**
+	 * The compact control that opens a compound in the molecule builder. It
+	 * carries the same box as the object card's actions, so a palette card and
+	 * a vessel carousel slide show one affordance; the text lives in the label
+	 * and the tooltip only.
+	 *
+	 * @private
+	 * @param {() => void} open - opens the structure in the builder
+	 * @returns {unknown} the icon button
+	 */
+	private renderStructureAction(open: () => void) {
+		const label = this.builderText("View structure", "Struktur ansehen");
+		return html`
+			<button type="button" class="object-summary-action structure-action" contenteditable="false"
+				aria-label=${label} title=${label} @click=${open}>
+				<svg aria-hidden="true" width="12" height="12" viewBox="0 0 16 16" fill="none"
+					stroke="currentColor" stroke-width="1.3" stroke-linecap="round">
+					<circle cx="8" cy="8.6" r="1.9"/>
+					<circle cx="8" cy="2.7" r="1.4"/>
+					<circle cx="3" cy="11.6" r="1.4"/>
+					<circle cx="13" cy="11.6" r="1.4"/>
+					<path d="M8 6.7V4.1M6.6 9.5 4.3 10.8M9.4 9.5l2.3 1.3"/>
+				</svg>
+			</button>`;
 	}
 
 	private renderSelectionDeleteButton(remove: () => void, label = this.message("löschen")) {

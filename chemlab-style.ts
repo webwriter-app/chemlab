@@ -1851,16 +1851,6 @@ export const style = css`
 		font-size: .75rem;
 	}
 
-	.vessel-structure-link {
-		padding: 0;
-		border: 0;
-		background: none;
-		color: var(--sl-color-primary-700);
-		font: inherit;
-		text-decoration: underline;
-		cursor: pointer;
-	}
-
 	#canvasArea {
 		grid-column: 2;
 		grid-row: 1;
@@ -2152,7 +2142,22 @@ export const style = css`
 		gap: 2px;
 		line-height: 1.25;
 	}
-	#contextMolInfo .vessel-carousel-quantities > :is(h5, p) {
+	#contextMolInfo .vessel-carousel-title {
+		display: flex;
+		align-items: center;
+		gap: 4px;
+		min-inline-size: 0;
+	}
+	#contextMolInfo .vessel-carousel-title > h5 {
+		flex: 1 1 auto;
+		min-inline-size: 0;
+	}
+	/* The slide already sits on the inset surface, so its icon needs the card
+	   surface to stay visible as a control. */
+	#contextMolInfo .vessel-carousel-title > .structure-action {
+		background: var(--lab-card-surface);
+	}
+	#contextMolInfo .vessel-carousel-quantities :is(h5, p) {
 		margin: 0;
 		white-space: normal;
 		overflow-wrap: anywhere;
@@ -2473,7 +2478,18 @@ export const style = css`
 	}
 	.palette-card-name {
 		position: relative;
+		display: flex;
+		align-items: center;
+		gap: 4px;
 		min-inline-size: 0;
+	}
+	/* The tag keeps the free width, so a long name ellipsizes instead of
+	   pushing the structure icon out of the header. */
+	.palette-card-name > :is(sl-tag, .palette-card-menu-trigger) {
+		min-inline-size: 0;
+	}
+	.palette-card-name > .structure-action {
+		flex: none;
 	}
 	.palette-card-name > sl-tag {
 		max-inline-size: 100%;
@@ -2655,25 +2671,15 @@ export const style = css`
 		min-inline-size: 0;
 		contain: inline-size;
 	}
-	.chemical-card-preview:has(> .structure-link) {
-		display: grid;
-		grid-template-columns: minmax(0, 1fr);
-		gap: 4px;
+	/* The structure icon sits beside the name tag, so a card names its
+	   compound and offers its structure in the same line. */
+	.structure-action {
+		color: var(--sl-color-primary-700);
 	}
-	.structure-link {
-		justify-self: start;
-		max-inline-size: 100%;
-	}
-	.structure-link::part(base) {
-		max-inline-size: 100%;
-		height: auto;
-		min-height: 24px;
-	}
-	.structure-link::part(label) {
-		padding: 2px 7px;
-		line-height: 1.25;
-		white-space: normal;
-		overflow-wrap: anywhere;
+	.structure-action:is(:hover, :active) {
+		color: var(--sl-color-primary-800);
+		background: var(--sl-color-primary-100);
+		border-color: var(--sl-color-primary-200);
 	}
 	.chemical-card-preview[data-menu-open] {
 		visibility: hidden;
