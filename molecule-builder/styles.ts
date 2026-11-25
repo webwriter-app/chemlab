@@ -595,6 +595,6 @@ export const builderStyles = css`
 			inset-inline-start: .5rem;
 			max-block-size: min(11rem, calc(100% - 2.25rem));
 		}
-		.model-summary, .selection-card { max-inline-size: calc(100% - 4.2rem); }
+		.model-summary, .selection-card { max-inline-size: calc(100% - 5.8rem); }
 	}
 `;

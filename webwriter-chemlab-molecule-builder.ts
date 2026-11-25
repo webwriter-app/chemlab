@@ -1718,6 +1718,8 @@ export class ChemLabMoleculeBuilder extends LitElementWw {
 		const atomSymbol = atomic ? symbol(atomic.species.atomicNumber) + superscript(chargeText(atomic.species.charge)) : "";
 		const nucleus = atomic && this.atomChoices.model === "bohr" ? referenceNucleus(atomic.species.atomicNumber) : undefined;
 		const sceneVisible = this.view === "3d" && !atomic;
+		const canZoom = atomic || (sceneVisible && this.gpu === "ready") || (this.view === "2d" && current.kind === "molecule");
+		const canFit = atomic || sceneVisible || current.kind === "molecule";
 		const fit = () => {
 			if (atomic) this.#atomicFigure?.fit();
 			else this.#scene?.fit();
@@ -1862,12 +1864,13 @@ export class ChemLabMoleculeBuilder extends LitElementWw {
 											this.view = "2d";
 										} })}
 								</sl-button-group>`}
-								${atomic || (sceneVisible && this.gpu === "ready") || (this.view === "2d" && current.kind === "molecule") ? html`<sl-button-group label=${this.#t("Zoom", "Zoom")}>
-									${this.#iconButton({ label: this.#t("Zoom in", "Vergrößern"), icon: ZOOM_IN_ICON, onClick: () => zoom(.83) })}
-									${this.#iconButton({ label: this.#t("Zoom out", "Verkleinern"), icon: ZOOM_OUT_ICON, onClick: () => zoom(1.2) })}
+								${canZoom || canFit ? html`<sl-button-group label=${this.#t("Zoom", "Zoom")}>
+									${canZoom ? html`
+										${this.#iconButton({ label: this.#t("Zoom in", "Vergrößern"), icon: ZOOM_IN_ICON, onClick: () => zoom(.83) })}
+										${this.#iconButton({ label: this.#t("Zoom out", "Verkleinern"), icon: ZOOM_OUT_ICON, onClick: () => zoom(1.2) })}
+									` : nothing}
+									${canFit ? this.#iconButton({ label: this.#t("Fit view", "Ansicht einpassen"), icon: FIT_ICON, onClick: fit }) : nothing}
 								</sl-button-group>` : nothing}
-								${atomic || sceneVisible || current.kind === "molecule"
-									? this.#iconButton({ label: this.#t("Fit view", "Ansicht einpassen"), icon: FIT_ICON, onClick: fit }) : nothing}
 								${this.#iconButton({ label: this.fullscreen ? this.#t("Exit fullscreen", "Vollbild verlassen")
 									: this.#t("Fullscreen", "Vollbild"), icon: this.fullscreen ? EXIT_FULLSCREEN_ICON : FULLSCREEN_ICON,
 									pressed: !!this.fullscreen, onClick: this.#toggleFullscreen })}
