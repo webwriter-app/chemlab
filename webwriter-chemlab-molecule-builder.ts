@@ -1550,9 +1550,11 @@ export class ChemLabMoleculeBuilder extends LitElementWw {
 						${[1, 2, 3].filter(value => value ** 3 * current.sites.length <= 1800)
 							.map(value => html`<option value=${value} ?selected=${value === this.repeats}>${value} × ${value} × ${value}</option>`)}
 					</select></label>
-				${toggle(this.#t("Cell edges", "Zellkanten"), EDGES_ICON, this.showEdges, () => { this.showEdges = !this.showEdges; })}
-				${toggle(this.#t("Lattice points", "Gitterpunkte"), LATTICE_ICON, this.showLattice, () => { this.showLattice = !this.showLattice; })}
-				${toggle(this.#t("Axes", "Achsen"), AXES_ICON, this.showAxes, () => { this.showAxes = !this.showAxes; })}
+				<sl-button-group label=${this.#t("Lattice display", "Gitterdarstellung")}>
+					${toggle(this.#t("Cell edges", "Zellkanten"), EDGES_ICON, this.showEdges, () => { this.showEdges = !this.showEdges; })}
+					${toggle(this.#t("Lattice points", "Gitterpunkte"), LATTICE_ICON, this.showLattice, () => { this.showLattice = !this.showLattice; })}
+					${toggle(this.#t("Axes", "Achsen"), AXES_ICON, this.showAxes, () => { this.showAxes = !this.showAxes; })}
+				</sl-button-group>
 			</div>` : nothing}
 			${canShowPolarity && this.showPolarity ? html`<div class="fields" title=${this.#t(
 				"A larger electronegativity difference gives a stronger colour contrast. Grey bonds have equal or unavailable values.",
@@ -1705,12 +1707,12 @@ export class ChemLabMoleculeBuilder extends LitElementWw {
 		const tool = (value: Tool, label: string, icon: unknown) => this.#iconButton({
 			label, icon, pressed: value === this.tool, onClick: () => this.#setTool(value),
 		});
-		const newTools = html`<div class="tool-group" role="group" aria-label=${this.#t("New structure", "Neue Struktur")}>
+		const newTools = html`<sl-button-group class="tool-group" label=${this.#t("New structure", "Neue Struktur")}>
 			${this.#iconButton({ label: this.#t("New molecule", "Neues Molekül"), icon: NEW_MOLECULE_ICON,
 				onClick: () => this.#new("molecule") })}
 			${this.#iconButton({ label: this.#t("New lattice", "Neues Gitter"), icon: NEW_CRYSTAL_ICON,
 				onClick: () => this.#new("crystal") })}
-		</div>`;
+		</sl-button-group>`;
 		const atomic = this.#atomInspection;
 		const explicitAtom = !!this.inspectedAtom;
 		const atomSymbol = atomic ? symbol(atomic.species.atomicNumber) + superscript(chargeText(atomic.species.charge)) : "";
@@ -1770,31 +1772,33 @@ export class ChemLabMoleculeBuilder extends LitElementWw {
 			</header>
 			${this.#readonly || editingHidden ? nothing : html`<div class="tools" role="toolbar" aria-label=${this.#t("Editing tools", "Bearbeitungswerkzeuge")}>
 				${newTools}
-				<div class="tool-group" role="group" aria-label=${this.#t("Tools", "Werkzeuge")}>
-					${tool("orbit", this.view === "3d" ? this.#t("Orbit", "Drehen") : this.#t("Select", "Auswählen"),
-						this.view === "3d" ? ORBIT_ICON : CURSOR_ICON)}
-					${tool("atom", this.view === "2d" && current.kind === "crystal"
-						? this.#t("Place ion or atom", "Ion oder Atom platzieren") : this.#t("Place atom", "Atom platzieren"), ATOM_ICON)}
-					${current.kind === "molecule" ? tool("bond", this.#t("Draw bond", "Bindung zeichnen"), BOND_ICON) : nothing}
-					${this.tool === "bond" ? html`<span class="bond-orders" role="group" aria-label=${this.#t("Bond type", "Bindungstyp")}>
+				<div class="tool-group">
+					<sl-button-group label=${this.#t("Tools", "Werkzeuge")}>
+						${tool("orbit", this.view === "3d" ? this.#t("Orbit", "Drehen") : this.#t("Select", "Auswählen"),
+							this.view === "3d" ? ORBIT_ICON : CURSOR_ICON)}
+						${tool("atom", this.view === "2d" && current.kind === "crystal"
+							? this.#t("Place ion or atom", "Ion oder Atom platzieren") : this.#t("Place atom", "Atom platzieren"), ATOM_ICON)}
+						${current.kind === "molecule" ? tool("bond", this.#t("Draw bond", "Bindung zeichnen"), BOND_ICON) : nothing}
+					</sl-button-group>
+					${this.tool === "bond" ? html`<sl-button-group label=${this.#t("Bond type", "Bindungstyp")}>
 						${([["auto", "Auto", "Auto"], ["covalent", "Covalent", "Kovalent"], ["ionic", "Ionic", "Ionisch"]] as const)
 							.map(([mode, en, de]) => html`<sl-button size="small" variant=${mode === this.bondMode ? "primary" : "default"}
 								aria-pressed=${String(mode === this.bondMode)} @click=${() => { this.bondMode = mode; }}>${this.#t(en, de)}</sl-button>`)}
-					</span>` : nothing}
-					${this.tool === "bond" && this.bondMode !== "ionic" ? html`<span class="bond-orders" role="group" aria-label=${this.#t("Bond order", "Bindungsordnung")}>
+					</sl-button-group>` : nothing}
+					${this.tool === "bond" && this.bondMode !== "ionic" ? html`<sl-button-group label=${this.#t("Bond order", "Bindungsordnung")}>
 						${([1, 2, 3] as BondOrder[]).map(order => html`<sl-button class="icon-control" size="small"
 							variant=${order === this.bondOrder ? "primary" : "default"} aria-pressed=${String(order === this.bondOrder)}
 							aria-label=${this.#t(`Bond order ${order}`, `Bindungsordnung ${order}`)}
 							title=${this.#t(`Bond order ${order}`, `Bindungsordnung ${order}`)}
 							@click=${() => { this.bondOrder = order; }}>${order}</sl-button>`)}
-					</span>` : nothing}
+					</sl-button-group>` : nothing}
 				</div>
 				${current.kind === "molecule" && current.bonds.length ? html`<div class="tool-group">
 					${this.#iconButton({ label: this.#t("Fit geometry", "Geometrie anpassen"), icon: GEOMETRY_ICON, onClick: this.#geometry })}
 				</div>` : nothing}
-				${this.#past.length || this.#future.length ? html`<div class="tool-group" role="group" aria-label=${this.#t("History", "Verlauf")}>
+				${this.#past.length || this.#future.length ? html`<sl-button-group class="tool-group" label=${this.#t("History", "Verlauf")}>
 					${this.#renderHistoryButton(false)}${this.#renderHistoryButton(true)}
-				</div>` : nothing}
+				</sl-button-group>` : nothing}
 			</div>`}
 			<div class="workspace" ?data-palette=${paletteVisible}
 				?data-collapsed=${!this.#readonly && !paletteHidden && !paletteVisible}>
@@ -1849,7 +1853,7 @@ export class ChemLabMoleculeBuilder extends LitElementWw {
 								<span class="grid-scale-line" aria-hidden="true"></span><span class="grid-length"></span>
 							</sl-tag>
 							${canvasHidden ? nothing : html`<div class="view-buttons">
-								${explicitAtom || viewLocked ? nothing : html`
+								${explicitAtom || viewLocked ? nothing : html`<sl-button-group label=${this.#t("View", "Ansicht")}>
 									${this.#iconButton({ label: this.#t("3D view", "3D-Ansicht"), icon: CUBE_ICON, pressed: this.view === "3d",
 										disabled: this.gpu === "unavailable", onClick: () => { this.view = "3d"; } })}
 									${this.#iconButton({ label: this.#t("Structure view", "Strukturansicht"), icon: PLANE_ICON, pressed: this.view === "2d",
@@ -1857,11 +1861,11 @@ export class ChemLabMoleculeBuilder extends LitElementWw {
 											if (this.#atomicTarget) this.#leaveAtom();
 											this.view = "2d";
 										} })}
-								`}
-								${atomic || (sceneVisible && this.gpu === "ready") || (this.view === "2d" && current.kind === "molecule") ? html`
+								</sl-button-group>`}
+								${atomic || (sceneVisible && this.gpu === "ready") || (this.view === "2d" && current.kind === "molecule") ? html`<sl-button-group label=${this.#t("Zoom", "Zoom")}>
 									${this.#iconButton({ label: this.#t("Zoom in", "Vergrößern"), icon: ZOOM_IN_ICON, onClick: () => zoom(.83) })}
 									${this.#iconButton({ label: this.#t("Zoom out", "Verkleinern"), icon: ZOOM_OUT_ICON, onClick: () => zoom(1.2) })}
-								` : nothing}
+								</sl-button-group>` : nothing}
 								${atomic || sceneVisible || current.kind === "molecule"
 									? this.#iconButton({ label: this.#t("Fit view", "Ansicht einpassen"), icon: FIT_ICON, onClick: fit }) : nothing}
 								${this.#iconButton({ label: this.fullscreen ? this.#t("Exit fullscreen", "Vollbild verlassen")

@@ -59,11 +59,13 @@ export function renderAtomicControls(configuration: AtomicConfiguration, choices
 	const coreLabel = choices.showCore ? t("Hide inner orbitals", "Innere Orbitale ausblenden") : t("Show inner orbitals", "Innere Orbitale einblenden");
 	return html`
 		<div class="atomic-controls">
-			<div class="atom-controls-row" role="group" aria-label=${t("Atom model", "Atommodell")}>
-				<sl-button size="small" variant=${orbital ? "default" : "primary"} aria-pressed=${String(!orbital)}
-					@click=${() => change({ ...choices, model: "bohr" })}>${t("Shells", "Schalen")}</sl-button>
-				<sl-button size="small" variant=${orbital ? "primary" : "default"} aria-pressed=${String(orbital)}
-					@click=${() => change({ ...choices, model: "orbitals" })}>${t("Orbitals", "Orbitale")}</sl-button>
+			<div class="atom-controls-row">
+				<sl-button-group label=${t("Atom model", "Atommodell")}>
+					<sl-button size="small" variant=${orbital ? "default" : "primary"} aria-pressed=${String(!orbital)}
+						@click=${() => change({ ...choices, model: "bohr" })}>${t("Shells", "Schalen")}</sl-button>
+					<sl-button size="small" variant=${orbital ? "primary" : "default"} aria-pressed=${String(orbital)}
+						@click=${() => change({ ...choices, model: "orbitals" })}>${t("Orbitals", "Orbitale")}</sl-button>
+				</sl-button-group>
 				${configuration.predicted ? html`<sl-tag size="small" pill>${t("Predicted", "Vorhergesagt")}</sl-tag>` : nothing}
 			</div>
 			${!shells.length ? html`<span>${configuration.electrons === 0 ? t("No electrons", "Keine Elektronen")

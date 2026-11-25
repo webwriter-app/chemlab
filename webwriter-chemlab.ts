@@ -19,6 +19,7 @@ import SmilesDrawer from "smiles-drawer"
 
 import SlDetails from "@shoelace-style/shoelace/dist/components/details/details.component.js";
 import SlButton from "@shoelace-style/shoelace/dist/components/button/button.component.js";
+import SlButtonGroup from "@shoelace-style/shoelace/dist/components/button-group/button-group.component.js";
 import SlIconButton from "@shoelace-style/shoelace/dist/components/icon-button/icon-button.component.js";
 import SlIcon from "@shoelace-style/shoelace/dist/components/icon/icon.component.js";
 import SlTag from "@shoelace-style/shoelace/dist/components/tag/tag.component.js";
@@ -693,6 +694,7 @@ export class ChemLab extends LitElementWw {
 		return {
 			"sl-details": SlDetails,
 			"sl-button": SlButton,
+			"sl-button-group": SlButtonGroup,
 			"sl-icon-button": SlIconButton,
 			"sl-icon": SlIcon,
 			"sl-badge": SlBadge,
@@ -3705,21 +3707,23 @@ export class ChemLab extends LitElementWw {
 							<path d="M2 2h12v12H2zM6 2v12m4-12v12M2 6h12M2 10h12"/>
 						</svg>
 					</sl-button>
-					<sl-button size="small" title=${this.message("Vergrößern")}
-						aria-label=${this.message("Vergrößern")} @click=${() => this.canvas.zoomBy(1.25)}>
-						<svg width="16" height="16" viewBox="0 0 16 16" stroke="currentColor" aria-hidden="true"><path d="M3 8h10M8 3v10"/></svg>
-					</sl-button>
-					<sl-button size="small" title=${this.message("Verkleinern")}
-						aria-label=${this.message("Verkleinern")} @click=${() => this.canvas.zoomBy(0.8)}>
-						<svg width="16" height="16" viewBox="0 0 16 16" stroke="currentColor" aria-hidden="true"><path d="M3 8h10"/></svg>
-					</sl-button>
-					<sl-button size="small" title=${this.message("Alle Objekte einpassen")}
-						aria-label=${this.message("Alle Objekte einpassen")} @click=${() => this.canvas.fitObjects()}>
-						<svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" aria-hidden="true">
-							<path d="M6 2H2v4m8-4h4v4m0 4v4h-4m-4 0H2v-4"/>
-							<rect x="5" y="5" width="6" height="6" rx="0.5"/>
-						</svg>
-					</sl-button>
+					<sl-button-group label=${this.message("Zoom")}>
+						<sl-button size="small" title=${this.message("Vergrößern")}
+							aria-label=${this.message("Vergrößern")} @click=${() => this.canvas.zoomBy(1.25)}>
+							<svg width="16" height="16" viewBox="0 0 16 16" stroke="currentColor" aria-hidden="true"><path d="M3 8h10M8 3v10"/></svg>
+						</sl-button>
+						<sl-button size="small" title=${this.message("Verkleinern")}
+							aria-label=${this.message("Verkleinern")} @click=${() => this.canvas.zoomBy(0.8)}>
+							<svg width="16" height="16" viewBox="0 0 16 16" stroke="currentColor" aria-hidden="true"><path d="M3 8h10"/></svg>
+						</sl-button>
+						<sl-button size="small" title=${this.message("Alle Objekte einpassen")}
+							aria-label=${this.message("Alle Objekte einpassen")} @click=${() => this.canvas.fitObjects()}>
+							<svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" aria-hidden="true">
+								<path d="M6 2H2v4m8-4h4v4m0 4v4h-4m-4 0H2v-4"/>
+								<rect x="5" y="5" width="6" height="6" rx="0.5"/>
+							</svg>
+						</sl-button>
+					</sl-button-group>
 					<sl-button id="buttonFullscreen" size="small" title=${this.message("Vollbild an/aus")}
 						aria-label=${this.message("Vollbild an/aus")} @click=${this.toggleFullscreen}>
 						<svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" aria-hidden="true">
@@ -4717,11 +4721,11 @@ export class ChemLab extends LitElementWw {
 				@keydown=${this.handleAmountMenuKey}>
 				<div class="amount-menu-heading">
 					<strong id="amountMenuTitle">${this.message(transfer ? "Inhalt übertragen" : "Stoff hinzufügen")}</strong>
-					<div class="amount-menu-actions">
+					<sl-button-group class="amount-menu-actions" label=${this.message(transfer ? "Inhalt übertragen" : "Stoff hinzufügen")}>
 						${this.renderCompactAction(this.message(menu.max > 0 ? "Abbrechen" : "Schließen"), "cancel", this.dismissAmountMenu)}
 						${menu.max > 0 ? this.renderCompactAction(this.message(transfer ? "Übertragen" : "Hinzufügen"), "confirm",
 							this.confirmAmount.bind(this), { primary: true, disabled: menu.amount <= 0 }) : nothing}
-					</div>
+					</sl-button-group>
 				</div>
 				<div class="amount-menu-route">
 					<sl-tag size="small" variant="neutral">${from}</sl-tag>
@@ -4882,7 +4886,7 @@ export class ChemLab extends LitElementWw {
 			if (!vessel.setBuretteStepMl(amount)) return;
 			this.requestUpdate();
 		};
-		const actions = html`<div class="device-actions">
+		const actions = html`<sl-button-group class="device-actions" label=${this.itemName(vessel._type)}>
 			${burette ? this.renderCompactAction(this.message("Einzeldosis"), "drop", () => {
 				if (this.stepTitration(vessel)) return;
 				this._notify(this.message(!vessel._content._activeMolecules.length ? "Die Bürette ist leer."
@@ -4895,7 +4899,7 @@ export class ChemLab extends LitElementWw {
 				this.requestUpdate();
 				this._sendxAPiStatement(flowing ? "completed" : "started", task);
 			}, { id: "openComp", primary: flowing })}
-		</div>`;
+		</sl-button-group>`;
 		return keyed(vessel, html`
 			<div class="device-controls" ?data-adjustable=${burette}>
 				${burette ? renderValueControl({
@@ -4937,7 +4941,7 @@ export class ChemLab extends LitElementWw {
 			this.requestUpdate();
 		};
 		const actions = html`<div class="device-actions">
-			<div class="device-mode" role="group" aria-label=${this.message(source ? "Betriebsart" : "Messbereich")}>
+			<sl-button-group class="device-mode" label=${this.message(source ? "Betriebsart" : "Messbereich")}>
 				${(["voltage", "current"] as const).map(next => {
 					const label = this.message(next === "voltage"
 						? source ? "Spannung vorgeben" : "Spannung" : source ? "Stromstärke vorgeben" : "Stromstärke");
@@ -4946,7 +4950,7 @@ export class ChemLab extends LitElementWw {
 						aria-pressed=${mode === next} aria-label=${label} title=${label} @click=${() => changeMode(next)}>
 						${next === "voltage" ? "V" : "A"}</sl-button>`;
 				})}
-			</div>
+			</sl-button-group>
 		</div>`;
 		return keyed(device, html`
 			<div class="device-controls" ?data-adjustable=${source}>

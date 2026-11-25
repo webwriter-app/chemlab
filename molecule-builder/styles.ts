@@ -51,7 +51,7 @@ export const builderStyles = css`
 		--sl-input-height-small: var(--chip-height);
 	}
 	.document, .tools, .view-buttons, .fields, .tool-group, .palette-heading,
-	.document-title, .document-actions, .card-head, .card-facts, .display-controls, .bond-orders {
+	.document-title, .document-actions, .card-head, .card-facts, .display-controls {
 		display: flex;
 		flex-wrap: wrap;
 		align-items: center;
@@ -373,6 +373,11 @@ export const builderStyles = css`
 		border-block-start: 0;
 	}
 	.view-tools sl-button::part(base) { box-shadow: var(--shadow); }
+	:is(.tools, .view-tools) sl-button-group::part(base) {
+		border-radius: var(--sl-input-border-radius-small);
+		box-shadow: var(--shadow);
+	}
+	:is(.tools, .view-tools) sl-button-group sl-button::part(base) { box-shadow: none; }
 	.view-tools sl-button:not([aria-pressed="true"])::part(base):not(:hover):not(:active) { background: var(--control); }
 	.empty { position: absolute; inset: 45% 12% auto; margin: 0; text-align: center; color: #52525b; pointer-events: none; }
 	/* The model summary and the selection card sit at the canvas edge, so they

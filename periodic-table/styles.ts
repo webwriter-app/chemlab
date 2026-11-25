@@ -225,6 +225,9 @@ export const periodicTableStyles = css`
 	   a light surface with a small shadow on the shaded bar. */
 	.ribbon sl-button::part(base) {
 		background: var(--pt-surface);
+	}
+	.ribbon sl-button-group::part(base) {
+		border-radius: var(--sl-input-border-radius-small);
 		box-shadow: var(--pt-control-shadow);
 	}
 
@@ -264,13 +267,6 @@ export const periodicTableStyles = css`
 		height: 0.3rem;
 		border-radius: 50%;
 		background: var(--pt-accent);
-	}
-
-	/* The layout switch keeps to the right edge on its own, because the cutout
-	   between the toggles and the switch takes every free pixel. */
-	.views {
-		display: flex;
-		gap: 0.25rem;
 	}
 
 	/* The active layout keeps the accent fill of its primary variant, because the

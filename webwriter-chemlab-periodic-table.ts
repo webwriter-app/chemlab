@@ -15,6 +15,7 @@ import { html, nothing, svg, type PropertyValues } from "lit";
 
 import SlBadge from "@shoelace-style/shoelace/dist/components/badge/badge.component.js";
 import SlButton from "@shoelace-style/shoelace/dist/components/button/button.component.js";
+import SlButtonGroup from "@shoelace-style/shoelace/dist/components/button-group/button-group.component.js";
 import SlCard from "@shoelace-style/shoelace/dist/components/card/card.component.js";
 import SlCarousel from "@shoelace-style/shoelace/dist/components/carousel/carousel.component.js";
 import SlCarouselItem from "@shoelace-style/shoelace/dist/components/carousel-item/carousel-item.component.js";
@@ -354,6 +355,7 @@ export class ChemLabPeriodicTable extends LitElementWw {
 		"chemlab-atomic-figure": AtomicFigure,
 		"sl-badge": SlBadge,
 		"sl-button": SlButton,
+		"sl-button-group": SlButtonGroup,
 		"sl-card": SlCard,
 		"sl-carousel": SlCarousel,
 		"sl-carousel-item": SlCarouselItem,
@@ -1168,22 +1170,24 @@ export class ChemLabPeriodicTable extends LitElementWw {
 		const cutoutOpen = this.#filtersOpen || this.#modesOpen;
 		return html`
 			<div class="ribbon">
-				<sl-button
-					class="ribbon-toggle ${this.#filtersOpen ? "is-open" : ""} ${filtersActive ? "is-active" : ""}"
-					size="small"
-					title=${t.filtersLabel}
-					aria-label=${t.filtersLabel}
-					aria-expanded=${this.#filtersOpen}
-					@click=${this.#toggleFilters}
-				>${FILTER_ICON}</sl-button>
-				<sl-button
-					class="ribbon-toggle ${this.#modesOpen ? "is-open" : ""} ${modesActive ? "is-active" : ""}"
-					size="small"
-					title=${t.modeLabel}
-					aria-label=${t.modeLabel}
-					aria-expanded=${this.#modesOpen}
-					@click=${this.#toggleModes}
-				>${MODE_ICON}</sl-button>
+				<sl-button-group label=${t.filtersLabel + " / " + t.modeLabel}>
+					<sl-button
+						class="ribbon-toggle ${this.#filtersOpen ? "is-open" : ""} ${filtersActive ? "is-active" : ""}"
+						size="small"
+						title=${t.filtersLabel}
+						aria-label=${t.filtersLabel}
+						aria-expanded=${this.#filtersOpen}
+						@click=${this.#toggleFilters}
+					>${FILTER_ICON}</sl-button>
+					<sl-button
+						class="ribbon-toggle ${this.#modesOpen ? "is-open" : ""} ${modesActive ? "is-active" : ""}"
+						size="small"
+						title=${t.modeLabel}
+						aria-label=${t.modeLabel}
+						aria-expanded=${this.#modesOpen}
+						@click=${this.#toggleModes}
+					>${MODE_ICON}</sl-button>
+				</sl-button-group>
 				<div class="ribbon-cutout">
 					${cutoutOpen
 						? html`
@@ -1194,7 +1198,7 @@ export class ChemLabPeriodicTable extends LitElementWw {
 						`
 						: null}
 				</div>
-				<div class="views" role="group" aria-label=${t.viewLabel}>
+				<sl-button-group class="views" label=${t.viewLabel}>
 					<sl-button
 						size="small"
 						variant=${resolved === "table" ? "primary" : "default"}
@@ -1211,7 +1215,7 @@ export class ChemLabPeriodicTable extends LitElementWw {
 						aria-pressed=${resolved === "list"}
 						@click=${() => this.#setView("list")}
 					>${LIST_ICON}</sl-button>
-				</div>
+				</sl-button-group>
 			</div>
 		`;
 	}
@@ -1912,15 +1916,17 @@ export class ChemLabPeriodicTable extends LitElementWw {
 							${categoryText(element, language)}
 						</sl-tag>
 						<div class="details-view-actions">
-							${openBuilder ? html`<sl-button class="details-view-button" size="small" title=${builderText} aria-label=${builderText}
-								@click=${() => {
-									const builder = this.#atomBuilder();
-									if (builder?.viewAtom(element.atomicNumber, this.#atomChoices.model)) builder.scrollIntoView({ block: "nearest" });
-								}}>${OPEN_BUILDER_ICON}</sl-button>` : nothing}
-							${options.atomPreview ? html`<sl-button class="details-view-button atom-preview-toggle" size="small" variant=${atomView ? "primary" : "default"}
-								title=${viewText} aria-label=${viewText} aria-pressed=${String(atomView)} @click=${this.#toggleAtomPreview}>
-								${atomView ? ELEMENT_DETAILS_ICON : ATOM_PREVIEW_ICON}
-							</sl-button>` : nothing}
+							${openBuilder || options.atomPreview ? html`<sl-button-group label=${t.detailsLabel}>
+								${openBuilder ? html`<sl-button class="details-view-button" size="small" title=${builderText} aria-label=${builderText}
+									@click=${() => {
+										const builder = this.#atomBuilder();
+										if (builder?.viewAtom(element.atomicNumber, this.#atomChoices.model)) builder.scrollIntoView({ block: "nearest" });
+									}}>${OPEN_BUILDER_ICON}</sl-button>` : nothing}
+								${options.atomPreview ? html`<sl-button class="details-view-button atom-preview-toggle" size="small" variant=${atomView ? "primary" : "default"}
+									title=${viewText} aria-label=${viewText} aria-pressed=${String(atomView)} @click=${this.#toggleAtomPreview}>
+									${atomView ? ELEMENT_DETAILS_ICON : ATOM_PREVIEW_ICON}
+								</sl-button>` : nothing}
+							</sl-button-group>` : nothing}
 							${options.close ? html`<sl-button class="details-view-button details-close" size="small"
 								title=${t.infoClose} aria-label=${t.infoClose} @click=${options.close}>${CLOSE_ICON}</sl-button>` : nothing}
 						</div>

@@ -1920,6 +1920,12 @@ export const style = css`
 	#canvasZoom sl-tag::part(base) {
 		box-shadow: var(--canvas-control-shadow);
 	}
+	#canvasZoom sl-button-group::part(base) {
+		border-radius: var(--sl-input-border-radius-small);
+		box-shadow: var(--canvas-control-shadow);
+	}
+	#canvasZoom sl-button-group sl-button::part(base) { box-shadow: none; }
+	#canvasZoom sl-button-group { flex: none; }
 	#canvasZoom sl-button:not([aria-pressed="true"])::part(base):not(:hover):not(:active),
 	#canvasZoom sl-tag::part(base) {
 		background: var(--canvas-control-surface);
@@ -2224,8 +2230,7 @@ export const style = css`
 		max-block-size: min(16rem, calc(100% - 8px));
 		padding: 5px;
 	}
-	.amount-menu-heading,
-	.amount-menu-actions {
+	.amount-menu-heading {
 		display: flex;
 		align-items: center;
 		justify-content: space-between;
@@ -2260,7 +2265,6 @@ export const style = css`
 	}
 	.amount-menu-actions {
 		flex: none;
-		justify-content: flex-end;
 	}
 	.volume-bar {
 		border-radius: var(--sl-border-radius-small);
@@ -2327,7 +2331,7 @@ export const style = css`
 	}
 	.device-controls[data-adjustable] { inline-size: 10.5rem; }
 	.device-controls:has(#dispenseBurette) { min-inline-size: min(10.5rem, 100%); inline-size: 100%; }
-	.device-actions, .device-mode, .device-readouts {
+	.device-actions, .device-readouts {
 		display: flex;
 		flex-wrap: wrap;
 		align-items: center;
