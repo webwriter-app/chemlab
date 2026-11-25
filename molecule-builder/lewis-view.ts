@@ -1,6 +1,7 @@
 import { html, nothing, svg } from "lit";
 import { atomSymbol, electronDots, formalCharge, signedNumber, type lewisDiagram } from "./structure-diagram";
 import { point2, type HydrationWater } from "./aqueous-preview";
+import { bondPolarity, polarityColors, polarityLevel, POLARITY_STOPS } from "./bond-polarity";
 import type { Point2, Point3 } from "./structure";
 
 type Diagram = ReturnType<typeof lewisDiagram>;
@@ -21,7 +22,9 @@ export function lewisViewBox(diagram: Diagram, waters: readonly HydrationWater<P
 	return [left - paddingX, -top - paddingY, right - left + 2 * paddingX, top - bottom + 2 * paddingY];
 }
 
-function bondLines(from: Point2, to: Point2, order: number, options: { active?: boolean; dative?: boolean; ionic?: boolean; trimEnd?: boolean } = {}) {
+function bondLines(from: Point2, to: Point2, order: number, options: {
+	active?: boolean; dative?: boolean; ionic?: boolean; trimEnd?: boolean; gradient?: { id: string; level: number };
+} = {}) {
 	const length = Math.hypot(to[0] - from[0], to[1] - from[1]);
 	if (length < .001) return nothing;
 	const dx = (to[0] - from[0]) / length, dy = (to[1] - from[1]) / length;
@@ -29,11 +32,18 @@ function bondLines(from: Point2, to: Point2, order: number, options: { active?: 
 	const end = options.trimEnd === false ? 0 : Math.min(options.dative ? .32 : .22, length * .34);
 	const x1 = from[0] + dx * start, y1 = from[1] + dy * start;
 	const x2 = to[0] - dx * end, y2 = to[1] - dy * end;
+	const gradient = options.gradient;
+	const stroke = gradient ? `url(#${gradient.id})` : nothing;
 	return svg`<g class="lewis-bond" ?data-active=${options.active} ?data-ionic=${options.ionic}>
+		${gradient ? svg`<defs><linearGradient id=${gradient.id} gradientUnits="userSpaceOnUse"
+			x1=${x1} y1=${-y1} x2=${x2} y2=${-y2}>
+			${polarityColors(gradient.level).map((color, index) => svg`<stop offset=${POLARITY_STOPS[index]} stop-color=${color} />`)}
+		</linearGradient></defs>` : nothing}
 		${Array.from({ length: order }, (_, index) => {
 			const offset = (index - (order - 1) / 2) * .075;
 			return svg`<line x1=${x1 - dy * offset} y1=${-y1 - dx * offset}
-				x2=${x2 - dy * offset} y2=${-y2 - dx * offset} stroke-dasharray=${options.ionic ? ".075 .08" : "none"} />`;
+				x2=${x2 - dy * offset} y2=${-y2 - dx * offset} stroke=${stroke}
+				stroke-dasharray=${options.ionic ? ".075 .08" : "none"} />`;
 		})}
 		${options.dative ? svg`<path d="M${x2 - dy * .055},${-y2 - dx * .055} L${x2 + dx * .11},${-y2 - dy * .11}
 			L${x2 + dy * .055},${-y2 + dx * .055}" />` : nothing}
@@ -45,9 +55,11 @@ export function renderLewis(diagram: Diagram, box: DiagramBox, options: {
 	order: number; ionicPreview?: boolean; drag?: { id: number; position: Point2 }; label: string; oxidationLabel: string; unknownLabel: string;
 	waters?: readonly HydrationWater<Point3>[];
 	monatomicIons?: ReadonlySet<number>;
+	polarity?: boolean;
 }) {
 	const atoms = diagram.atoms.map(atom => ({ ...atom, diagram: options.drag?.id === atom.id ? options.drag.position : atom.diagram }));
 	const positions = new Map(atoms.map(atom => [atom.id, atom.diagram]));
+	const elements = options.polarity ? new Map(atoms.map(atom => [atom.id, atom])) : undefined;
 	const highlighted = options.bondStart ?? options.picked;
 	const isActive = (id: number) => id === highlighted || id === options.hovered;
 	const draftFrom = positions.get(options.from);
@@ -78,10 +90,15 @@ export function renderLewis(diagram: Diagram, box: DiagramBox, options: {
 			</g>`;
 		})}
 		${repeat}
-		${diagram.bonds.map(bond => svg`<g data-bond="${bond.from}-${bond.to}">
-			${bondLines(positions.get(bond.from), positions.get(bond.to), bond.order,
-				{ active: isActive(bond.from) || isActive(bond.to), dative: bond.dative, ionic: bond.kind === "ionic" })}
-		</g>`)}
+		${diagram.bonds.map(bond => {
+			const level = elements ? polarityLevel(bondPolarity(bond, elements) ?? 0) : 0;
+			return svg`<g data-bond="${bond.from}-${bond.to}">
+				${bondLines(positions.get(bond.from), positions.get(bond.to), bond.order, {
+					active: isActive(bond.from) || isActive(bond.to), dative: bond.dative, ionic: bond.kind === "ionic",
+					gradient: level ? { id: `polarity-${bond.from}-${bond.to}`, level } : undefined,
+				})}
+			</g>`;
+		})}
 		${draftFrom && options.preview ? bondLines(draftFrom, options.preview, options.ionicPreview ? 1 : options.order,
 			{ active: true, ionic: options.ionicPreview, trimEnd: false }) : nothing}
 		${atoms.map(atom => {

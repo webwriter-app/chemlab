@@ -19,10 +19,11 @@ import { BUILDER_TAG, LAB_TAG, TABLE_TAG, worksheetPeers, worksheetScope, type L
 import { colorHex, crystalIonColors, crystalRadii, siteIon } from "./molecule-builder/crystal-display";
 import { add, fitGeometry, canBond, shapeName, formula, subtract } from "./molecule-builder/geometry";
 import { bondKind, canAssociateIons, ionicCharges, type BondMode } from "./molecule-builder/bond-types";
+import { bondPolarity, POLARITY_KEY } from "./molecule-builder/bond-polarity";
 import {
 	MAX_ATOMS, MAX_SITES, MAX_FILE_BYTES, cellVectors, fractional, isCell,
 	newCrystal, newMolecule, readStructure, withStructureDisplay, withoutStructureDisplay,
-	type BondOrder, type Cell, type Point2, type Point3, type Structure, type StructureDisplay,
+	type BondOrder, type Cell, type Molecule, type Point2, type Point3, type Structure, type StructureDisplay,
 } from "./molecule-builder/structure";
 import { chemicalFormula, crystalSpecies, editableRepeatUnit, empiricalCrystalFormula, freeCrystalSite, lewisDiagram, monatomicCharge } from "./molecule-builder/structure-diagram";
 import { aqueousComponents, hydrationWaters } from "./molecule-builder/aqueous-preview";
@@ -177,6 +178,7 @@ export class ChemLabMoleculeBuilder extends LitElementWw {
 	@state() private accessor showLabs = false;
 	@state() private accessor paletteOpen = true;
 	@state() private accessor showElectrons = false;
+	@state() private accessor showPolarity = false;
 	@state() private accessor molecularDisplay: MolecularDisplay = "sticks";
 	@state() private accessor orbitalId = "";
 	@state() private accessor inspectedAtom: { id: number; returnView: "2d" | "3d" } | undefined;
@@ -380,7 +382,7 @@ export class ChemLabMoleculeBuilder extends LitElementWw {
 		if (sceneVisible && this.gpu === "idle") void this.#startScene();
 		if (this.#scene && sceneVisible) {
 			this.#scene.setScene(this.#current, this.repeats, [this.picked, this.bondStart].filter(id => id !== undefined),
-				{ electrons: this.showElectrons, lattice: this.showLattice, edges: this.showEdges, axes: this.showAxes,
+				{ electrons: this.showElectrons, polarity: this.showPolarity, lattice: this.showLattice, edges: this.showEdges, axes: this.showAxes,
 					molecular: this.molecularDisplay, orbitalId: this.orbitalId,
 					hydration: this.showHydration && this.#current.kind === "molecule" && this.#current.representation === "aqueous-ions" });
 			if (this.#fitNext) {
@@ -582,19 +584,20 @@ export class ChemLabMoleculeBuilder extends LitElementWw {
 	}
 
 	/**
-	 * Hydration shells and valence electrons belong to the document, so the
+	 * Hydration, valence electrons and bond polarity belong to the document, so the
 	 * teacher's switch reaches the learner and survives a reload. Lattice, edges
 	 * and axes stay session state, because they describe the moment and not the
 	 * structure.
 	 */
 	get #viewSwitches(): StructureDisplay {
-		return { hydration: this.showHydration, electrons: this.showElectrons };
+		return { hydration: this.showHydration, electrons: this.showElectrons, polarity: this.showPolarity };
 	}
 
 	#applyDisplay(display: StructureDisplay | undefined) {
 		if (!display) return;
 		if (display.hydration !== undefined) this.showHydration = display.hydration;
 		if (display.electrons !== undefined) this.showElectrons = display.electrons;
+		if (display.polarity !== undefined) this.showPolarity = display.polarity;
 	}
 
 	/** A switch is a view choice: it writes the document but adds no undo step. */
@@ -1308,7 +1311,7 @@ export class ChemLabMoleculeBuilder extends LitElementWw {
 			const aqueous = this.#aqueous(current);
 			const waters = this.showHydration ? aqueous.waters : [];
 			return renderLewis(diagram, this.diagramBox ?? lewisViewBox(diagram, waters), {
-				waters, monatomicIons: aqueous.monatomicIons,
+				waters, monatomicIons: aqueous.monatomicIons, polarity: this.showPolarity,
 				picked: this.picked, hovered: this.hoveredAtom, bondStart: this.bondStart, from: this.#gesture?.from,
 				preview: this.bondPreview, order: this.bondOrder, ionicPreview: this.bondMode === "ionic", drag: this.diagramDrag,
 				label: this.#t(diagram.ends ? "Lewis structure of the repeating unit" : "Lewis structure",
@@ -1401,6 +1404,29 @@ export class ChemLabMoleculeBuilder extends LitElementWw {
 		`;
 	}
 
+	#canShowPolarity(current: Structure): current is Molecule {
+		return current.kind === "molecule" && current.bonds.some(bond => bond.kind !== "ionic" && !bond.dative)
+			&& (this.view === "2d" || (this.gpu === "ready" && (!hasMolecularDisplays(current) || this.molecularDisplay === "sticks")));
+	}
+
+	#renderPolarityReadout(molecule: Molecule, id: number) {
+		const atoms = new Map(molecule.atoms.map(atom => [atom.id, atom]));
+		const labels = molecule.bonds.flatMap(bond => {
+			if (bond.kind === "ionic" || bond.dative || (bond.from !== id && bond.to !== id)) return [];
+			const from = symbol(atoms.get(bond.from).atomicNumber);
+			const to = symbol(atoms.get(bond.to).atomicNumber);
+			const delta = bondPolarity(bond, atoms);
+			if (delta === undefined) return [`${from}–${to} · ${this.#t("Δχ unavailable", "Δχ nicht verfügbar")}`];
+			const direction = delta > 0 ? "→" : delta < 0 ? "←" : "–";
+			const value = Math.abs(delta).toLocaleString(this.#t("en", "de"), { maximumFractionDigits: 2 });
+			return [`${from} ${direction} ${to} · Δχ ${value}`];
+		});
+		return labels.length ? html`<div class="bond-lengths">
+			<span class="summary-caption">${this.#t("Pull on bonding electrons", "Zugrichtung der Bindungselektronen")}</span>
+			<div class="card-facts">${labels.map(label => html`<sl-tag size="small">${label}</sl-tag>`)}</div>
+		</div>` : nothing;
+	}
+
 	#renderModelSummary(current: Structure, ionColors: ReadonlyMap<string, number>) {
 		const crystal = current.kind === "crystal";
 		const aqueous = !crystal && current.representation === "aqueous-ions" ? this.#aqueous(current) : undefined;
@@ -1412,6 +1438,7 @@ export class ChemLabMoleculeBuilder extends LitElementWw {
 		const options = this.catalogVariants.length > 1;
 		const displays = showDisplay && hasMolecularDisplays(current);
 		const molecular = displays ? this.molecularDisplay : "sticks";
+		const canShowPolarity = this.#canShowPolarity(current);
 		const lone = !crystal && current.atoms.length === 1 ? current.atoms[0] : undefined;
 		const composition = lone ? elementByAtomicNumber(lone.atomicNumber).names[this.#t("en", "de")]
 			: this.#atoms.length && (!crystal || this.view === "3d")
@@ -1498,7 +1525,7 @@ export class ChemLabMoleculeBuilder extends LitElementWw {
 					${this.#t("Oxidation state", "Oxidationszahl")}
 					<span data-oxidation="negative">−</span><span data-oxidation="neutral">0</span><span data-oxidation="positive">+</span>
 				</div>` : nothing}
-			${showDisplay && (crystal || molecular === "sticks") ? html`<div class="display-controls" role="group" aria-label=${this.#t("Display", "Darstellung")}>
+			${(showDisplay && (crystal || molecular === "sticks")) || canShowPolarity ? html`<div class="display-controls" role="group" aria-label=${this.#t("Display", "Darstellung")}>
 				${crystal ? html`<label>${this.#t("Cells", "Zellen")}
 					<select .value=${String(this.repeats)} @change=${(event: Event) => {
 						this.repeats = Number((event.currentTarget as HTMLSelectElement).value);
@@ -1514,6 +1541,20 @@ export class ChemLabMoleculeBuilder extends LitElementWw {
 				${current.kind === "molecule" && current.atoms.length && molecular === "sticks" && this.view === "3d" && this.gpu === "ready"
 					? toggle(this.#t("Valence electrons", "Valenzelektronen"), ELECTRONS_ICON, this.showElectrons, () => { this.#setDisplay({ electrons: !this.showElectrons }); })
 					: nothing}
+				${canShowPolarity ? html`<sl-button class="polarity-toggle" size="small"
+					variant=${this.showPolarity ? "primary" : "default"} aria-pressed=${String(this.showPolarity)}
+					@click=${() => this.#setDisplay({ polarity: !this.showPolarity })}>
+					${this.#t("Electron density", "Elektronendichte")}</sl-button>` : nothing}
+			</div>` : nothing}
+			${canShowPolarity && this.showPolarity ? html`<div class="fields" title=${this.#t(
+				"A larger electronegativity difference gives a stronger colour contrast. Grey bonds have equal or unavailable values.",
+				"Je größer der Unterschied in der Elektronegativität, desto stärker der Farbkontrast. Graue Bindungen haben gleiche oder unbekannte Werte.",
+			)}>
+				<span class="summary-caption">${this.#t("Qualitative bond polarity · Pauling Δχ", "Qualitative Bindungspolarität · Pauling-Δχ")}</span>
+				<span class="structure-legend">
+					<span style=${`--swatch: ${POLARITY_KEY.poor}`}>${this.#t("Electron-poor", "Elektronenärmer")}</span>
+					<span style=${`--swatch: ${POLARITY_KEY.rich}`}>${this.#t("Electron-rich", "Elektronenreicher")}</span>
+				</span>
 			</div>` : nothing}
 			<output aria-live="polite" ?hidden=${!status}>${status}</output>
 		</div>`;
@@ -1586,6 +1627,7 @@ export class ChemLabMoleculeBuilder extends LitElementWw {
 			<sl-details summary=${current.kind === "crystal" ? this.#t("Site & cell", "Gitterplatz & Zelle")
 					: this.#t("Atom properties", "Atom-Eigenschaften")}>
 				<div class="fields">
+					${here && this.showPolarity && this.#canShowPolarity(current) ? this.#renderPolarityReadout(current, here.id) : nothing}
 					${here && !this.#readonly ? html`<label class="formal-charge-input">${this.#t("Formal charge", "Formalladung")}
 						<input type="number" min="-8" max="8" step="1" required .value=${String(here.charge)}
 							@change=${(event: Event) => this.#setFormalCharge(here.id, event.currentTarget as HTMLInputElement)} />

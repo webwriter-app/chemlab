@@ -1,4 +1,4 @@
-import { Application, Graphics, Point, Text } from "pixi.js";
+import { Application, CanvasSource, Graphics, Point, Text, Texture } from "pixi.js";
 import {
 	Container3D, CylinderGeometry, Geometry3D, Material3D, Mesh3D, Plane,
 	Sphere, SphereGeometry, Vector3, View3D,
@@ -9,6 +9,7 @@ import { crystalIonColors, crystalRadii, latticePositions, siteIon } from "./cry
 import { atomRadius, spaceFillingRadius } from "./radii";
 import { hasMolecularDisplays, moleculeOrbitals, ORBITAL_PHASE_COLORS, unpackOrbitalSurface, type MolecularDisplay } from "./orbitals";
 import { aqueousComponents, hydrationWaters } from "./aqueous-preview";
+import { bondPolarity, polarityColors, polarityLevel, POLARITY_STOPS } from "./bond-polarity";
 import { cartesian, cellVectors, replicatedSites, type Point3, type Structure } from "./structure";
 
 const vector = ([x, y, z]: Point3) => ({ x, y, z });
@@ -35,7 +36,7 @@ const SELECTION_MARK = 1;
  */
 const HOVER_MARK = 0.55;
 /** What the scene shows besides the structure itself. */
-export type SceneDisplay = { electrons: boolean; lattice: boolean; edges: boolean; axes: boolean; hydration: boolean; molecular: MolecularDisplay; orbitalId?: string };
+export type SceneDisplay = { electrons: boolean; polarity: boolean; lattice: boolean; edges: boolean; axes: boolean; hydration: boolean; molecular: MolecularDisplay; orbitalId?: string };
 
 export class MoleculeScene {
 	static async create(host: HTMLElement, updateScale: (pixelsPerAngstrom: number) => void) {
@@ -74,6 +75,7 @@ export class MoleculeScene {
 	readonly #spaceSphere = new SphereGeometry({ radius: 1, widthSegments: 40, heightSegments: 28 });
 	readonly #cylinder = new CylinderGeometry({ height: 1, radiusTop: 1, radiusBottom: 1, radialSegments: 10 });
 	readonly #materials = new Map<string, Material3D>();
+	readonly #polarityMaterials = new Map<number, { material: Material3D; texture: Texture }>();
 	readonly #bondRegion = new Material3D({ baseColor: 0x0284c7, roughness: .85, alphaMode: "blend", alpha: .28 });
 	readonly #loneRegion = new Material3D({ baseColor: 0xc084fc, roughness: .85, alphaMode: "blend", alpha: .39 });
 	readonly #picks = new Map<Mesh3D, { id: number; color: number; ionic: boolean; opacity: number; position: Point3; radius: number }>();
@@ -84,6 +86,7 @@ export class MoleculeScene {
 	#hovered?: number;
 	#structure?: Structure;
 	#showElectrons = false;
+	#showPolarity = false;
 	#molecular: MolecularDisplay = "sticks";
 	#orbitalId?: string;
 	#orbitalBounds: Point3[] = [];
@@ -163,8 +166,29 @@ export class MoleculeScene {
 		return material;
 	}
 
-	#rod() {
-		return new Mesh3D({ geometry: this.#cylinder, material: this.#material(0x858f9b), eventMode: "none" });
+	#bondMaterial(level: number) {
+		if (!level) return this.#material(0x858f9b);
+		const cached = this.#polarityMaterials.get(level);
+		if (cached) return cached.material;
+		const canvas = this.canvas.ownerDocument.createElement("canvas");
+		canvas.width = 2;
+		canvas.height = 64;
+		const context = canvas.getContext("2d");
+		if (!context) return this.#material(0x858f9b);
+		const gradient = context.createLinearGradient(0, 0, 0, canvas.height);
+		// The cylinder's +Y end points at the second atom and uses v = 0.
+		const colors = polarityColors(-level);
+		POLARITY_STOPS.forEach((offset, index) => gradient.addColorStop(offset, colors[index]));
+		context.fillStyle = gradient;
+		context.fillRect(0, 0, canvas.width, canvas.height);
+		const texture = new Texture({ source: new CanvasSource({ resource: canvas }) });
+		const material = rimmedMaterial({ baseColor: 0xffffff, baseColorTexture: texture, roughness: .61 });
+		this.#polarityMaterials.set(level, { material, texture });
+		return material;
+	}
+
+	#rod(material = this.#material(0x858f9b)) {
+		return new Mesh3D({ geometry: this.#cylinder, material, eventMode: "none" });
 	}
 
 	#line(mesh: Mesh3D, from: Point3, to: Point3, width: number) {
@@ -286,8 +310,11 @@ export class MoleculeScene {
 
 	setScene(structure: Structure, repeats: number, selection: number[], display: SceneDisplay) {
 		const molecular = hasMolecularDisplays(structure) ? display.molecular : "sticks";
-		const rebuild = structure !== this.#structure || repeats !== this.#repeats || molecular !== this.#molecular;
+		const polarity = structure.kind === "molecule" && molecular === "sticks" && display.polarity;
+		const rebuild = structure !== this.#structure || repeats !== this.#repeats || molecular !== this.#molecular
+			|| polarity !== this.#showPolarity;
 		this.#molecular = molecular;
+		this.#showPolarity = polarity;
 		const crystal = structure.kind === "crystal";
 		const latticeVisible = crystal && display.lattice;
 		const edgesVisible = crystal && display.edges;
@@ -336,9 +363,9 @@ export class MoleculeScene {
 						site.occupancy, colors.get(siteIon(site)));
 				}
 			} else {
-				const positions = new Map(structure.atoms.map(atom => [atom.id, atom.position]));
+				const atoms = new Map(structure.atoms.map(atom => [atom.id, atom]));
 				for (const bond of molecular === "space-filling" ? [] : structure.bonds) {
-					const from = positions.get(bond.from), to = positions.get(bond.to);
+					const from = atoms.get(bond.from).position, to = atoms.get(bond.to).position;
 					if (bond.kind === "ionic") {
 						const gap = subtract(to, from);
 						for (const start of [.28, .44, .60]) {
@@ -350,9 +377,10 @@ export class MoleculeScene {
 					}
 					const axis = unit(subtract(to, from));
 					const rods = molecular === "orbitals" ? 1 : bond.order;
+					const material = this.#bondMaterial(polarity ? polarityLevel(bondPolarity(bond, atoms) ?? 0) : 0);
 					for (let index = 0; index < rods; index++) {
 						const offset = scale(perpendicular(axis), (index - (rods - 1) / 2) * 0.13);
-						const rod = this.#rod();
+						const rod = this.#rod(material);
 						this.#line(rod, add(from, offset), add(to, offset), molecular === "orbitals" ? .025 : .046);
 						this.#content.addChild(rod);
 					}
@@ -557,6 +585,10 @@ export class MoleculeScene {
 		this.#axes.destroy();
 		for (const label of this.#axisLabels) label.destroy();
 		for (const material of this.#materials.values()) material.destroy();
+		for (const { material, texture } of this.#polarityMaterials.values()) {
+			material.destroy();
+			texture.destroy(true);
+		}
 		this.#vignette.destroy();
 	}
 }

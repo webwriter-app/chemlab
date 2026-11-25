@@ -17,11 +17,11 @@ export type RepeatUnit = { atoms: number[]; ends: [number, number] };
 export type Cell = { lengths: Point3; angles: Point3 };
 export type Site = Omit<Atom, "diagram" | "position"> & { fractional: Point3; occupancy?: number; ion?: string };
 /**
- * The two display switches a saved structure carries. They belong to the
+ * The display switches a saved structure carries. They belong to the
  * document, not to the edit history: reopening a structure restores the view
  * the teacher left it in, while undo keeps the switches untouched.
  */
-export type StructureDisplay = { hydration?: boolean; electrons?: boolean };
+export type StructureDisplay = { hydration?: boolean; electrons?: boolean; polarity?: boolean };
 type Base = { version: 1; name: string; catalogKey?: string; source?: string; display?: StructureDisplay };
 export type Representation = "constituent" | "repeat-unit" | "ionic-components" | "aqueous-ions" | "conformer" | "experimental";
 export type Molecule = Base & {
@@ -110,6 +110,7 @@ function readDisplay(value: unknown): StructureDisplay | undefined {
 	const display: StructureDisplay = {};
 	if (value.hydration === true || value.hydration === false) display.hydration = value.hydration;
 	if (value.electrons === true || value.electrons === false) display.electrons = value.electrons;
+	if (value.polarity === true || value.polarity === false) display.polarity = value.polarity;
 	return Object.keys(display).length ? display : undefined;
 }
 

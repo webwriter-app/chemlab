@@ -19,7 +19,7 @@ const molecule: Molecule = {
 	], bonds: [{ from: 1, to: 2, order: 1 }, { from: 1, to: 3, order: 1 }],
 };
 
-const switches: StructureDisplay = { hydration: true, electrons: true };
+const switches: StructureDisplay = { hydration: true, electrons: true, polarity: true };
 
 /**
  * Hydration shells and valence electrons are part of the saved structure, so a
