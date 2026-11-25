@@ -1964,7 +1964,7 @@ export const style = css`
 	#contextMixInfo {
 		flex-wrap: wrap;
 	}
-	#contextInfoBox .object-summary-heading {
+	.selection-info .object-summary-heading {
 		position: sticky;
 		inset-block-start: 0;
 		z-index: 2;
@@ -2359,13 +2359,71 @@ export const style = css`
 		border: 0;
 		background: transparent;
 	}
-	.selection-labels {
+	#groupSelectionInfo {
+		display: grid;
+		gap: 5px;
+		inline-size: min(13rem, calc(100% - 8px));
+		max-block-size: min(14rem, calc(100% - 8px));
+		scrollbar-width: thin;
+	}
+	#groupSelectionInfo .object-summary-heading { flex-wrap: wrap; }
+	.group-selection-actions {
+		display: flex;
+		flex: none;
+		align-items: center;
+		gap: 4px;
+		margin-inline-start: auto;
+	}
+	#groupSelectionInfo .compact-control-button { --sl-input-height-small: 20px; }
+	.group-selection-list {
+		display: grid;
+		margin: 0;
+		padding: 0;
+		list-style: none;
+		border: 1px solid var(--lab-card-border);
+		border-radius: 4px;
+		background: var(--lab-card-inset);
+	}
+	.group-selection-row {
+		display: grid;
+		grid-template-columns: minmax(0, 1fr) auto;
+		align-items: center;
+		gap: 4px;
+		padding: 4px;
+	}
+	.group-selection-row + .group-selection-row { border-block-start: 1px solid var(--lab-card-border); }
+	.group-selection-object {
 		display: flex;
 		flex-wrap: wrap;
-		gap: 4px;
+		align-items: center;
+		gap: 2px 4px;
+		min-inline-size: 0;
+		padding: 0;
+		border: 0;
+		border-radius: 4px;
+		background: transparent;
+		color: var(--lab-card-secondary-text);
+		font: inherit;
+		text-align: start;
+		cursor: pointer;
 	}
-	.selection-labels > sl-badge {
-		margin: 0;
+	#groupSelectionInfo sl-tag { max-inline-size: 100%; }
+	#groupSelectionInfo sl-tag::part(base) {
+		min-block-size: calc(var(--sl-input-height-small) * .8);
+		block-size: auto;
+		line-height: 1.2;
+		padding-block: 2px;
+		white-space: normal;
+		overflow-wrap: anywhere;
+	}
+	.group-selection-object:hover sl-tag::part(base) {
+		background: var(--sl-color-primary-100);
+		border-color: var(--sl-color-primary-300);
+	}
+	.group-selection-object:focus-visible { outline: var(--sl-focus-ring); }
+	.group-selection-object small {
+		font-size: .67rem;
+		font-variant-numeric: tabular-nums;
 	}
 	.device-controls {
 		display: grid;
@@ -2929,9 +2987,6 @@ export const style = css`
 	#foldMenu:hover {
 		background-color: #0074aa;
 		color: #ffff;
-	}
-	.selection-info-title::part(base) {
-		background-color: #ff1f66;
 	}
 	#contextTag::part(base) {
 		background-color: #51a332;

@@ -493,6 +493,13 @@ export class CanvasController implements ReactiveController {
 		this.host.requestUpdate();
 	}
 
+	removeFromGroupSelection(sprite: PIXI.Container): void {
+		if (!this.selection.includes(sprite)) return;
+		const remaining = this.selection.filter(member => member !== sprite);
+		if (remaining.length === 1) this.host._getObject(remaining[0]);
+		else this.setGroupSelection(remaining);
+	}
+
 	private selectionRectangle(): PIXI.Rectangle | undefined {
 		const { start, end } = this.marquee ?? {};
 		if (!end) return;

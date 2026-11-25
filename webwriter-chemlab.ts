@@ -172,6 +172,8 @@ const CONTROL_ICONS = {
 	play: "M5 3.5 12 8l-7 4.5z",
 	stop: "M4 4h8v8H4z",
 	cancel: "m4 4 8 8m0-8-8 8",
+	fit: "M6 2H2v4m8-4h4v4m0 4v4h-4m-4 0H2v-4M5.5 5.5h5v5h-5z",
+	minus: "M4 8h8",
 	confirm: "m3.5 8 3 3 6-6",
 	save: "M2.5 2.5h9L14 5v8.5H2.5zM5 2.5v4h5v-4m-5 11v-4h6v4",
 };
@@ -4814,15 +4816,60 @@ export class ChemLab extends LitElementWw {
 		if (this.#hides("hideObjectActions")) return nothing;
 		const selected = this.canvas.selectedObjects;
 		if (!selected.length) return nothing;
+		const title = this.builderText("Selected objects", "Ausgewählte Objekte");
+		const count = this.builderText(`${selected.length} selected`, `${selected.length} ausgewählt`);
+		const center = this.builderText("Centre selection", "Auswahl zentrieren");
+		const clear = this.builderText("Clear selection", "Auswahl aufheben");
+		const components = new Map([...this.allChemComponents, ...this.allEComponents]
+			.map(component => [`${component._type}:${component._id}`, component]));
+		const focusCanvas = () => this.app?.canvas.focus({ preventScroll: true });
 		return html`
-			<section id="groupSelectionInfo" class="selection-info" aria-label=${this.message("Ausgewählte Objekte")}>
+			<section id="groupSelectionInfo" class="selection-info" aria-label=${title} contenteditable="false">
 				<div class="object-summary-heading">
-					<div class="selection-labels">
-						${selected.map(({ label }) => html`
-							<sl-badge class="selection-info-title">${this.itemName(label.split(":")[0])}</sl-badge>`)}
+					<sl-tag size="small" variant="primary">${count}</sl-tag>
+					<div class="group-selection-actions">
+						<sl-button-group label=${title}>
+							${this.renderCompactAction(center, "fit", () => this.canvas.centerComponents(this.canvas.selectedObjects.map(({ label }) => label)))}
+							${this.renderCompactAction(clear, "cancel", () => {
+								this.canvas.clearGroupSelection();
+								focusCanvas();
+							})}
+						</sl-button-group>
+						${this.renderSelectionDeleteButton(() => {
+							this.removeObjects(this.canvas.selectedObjects);
+							focusCanvas();
+						})}
 					</div>
-					${this.renderSelectionDeleteButton(() => this.removeObjects(this.canvas.selectedObjects))}
 				</div>
+				<ul class="group-selection-list" aria-label=${title}>
+					${repeat(selected, sprite => sprite.label, (sprite, index) => {
+						const [type, id] = sprite.label.split(":");
+						const component = components.get(sprite.label);
+						const variantId = component instanceof chemlib.ElectricComponent ? component._variantId : undefined;
+						const variant = componentVariant(variantId);
+						const name = `${this.objectSummaryName(type, variantId)} ${Number(id) + 1}`;
+						const detail = component instanceof chemlib.ChemComponent && component._volume > 0
+							? `max. ${this.formatAmount(component._volume, 4)} mL`
+							: variant?.material && this.message(variant.material.name);
+						const select = this.builderText(`Select only ${name}`, `Nur ${name} auswählen`);
+						const remove = this.builderText(`Remove ${name} from selection`, `${name} aus Auswahl entfernen`);
+						return html`<li class="group-selection-row">
+							<button type="button" class="group-selection-object" title=${select} aria-label=${select}
+								@click=${() => { this._getObject(sprite); focusCanvas(); }}>
+								<sl-tag size="small" variant="primary">${name}</sl-tag>
+								${detail ? html`<small>${detail}</small>` : nothing}
+							</button>
+							${this.renderCompactAction(remove, "minus", () => {
+								this.canvas.removeFromGroupSelection(sprite);
+								void this.updateComplete.then(() => {
+									const rows = this.groupSummary?.querySelectorAll<HTMLElement>(".group-selection-row sl-button");
+									if (rows?.length) rows[Math.min(index, rows.length - 1)].focus();
+									else focusCanvas();
+								});
+							})}
+						</li>`;
+					})}
+				</ul>
 			</section>
 		`;
 	}
@@ -5298,12 +5345,16 @@ export class ChemLab extends LitElementWw {
 			<p>${this.message("Dauer bis zur Stromschwelle")}: ${duration(cutoffAt)}</p>`;
 	}
 
+	private objectSummaryName(type: string, variantId?: string): string {
+		const variant = componentVariant(variantId);
+		return variant?.reference !== undefined ? this.message(variant.size) : this.itemName(type);
+	}
+
 	private renderObjectSummary() {
 		if (this.#hides("hideObjectActions")) return nothing;
 		const vessel = this.curr_obj instanceof chemlib.ChemComponent ? this.curr_obj : undefined;
 		const device = this.curr_obj instanceof chemlib.ElectricComponent ? this.curr_obj : undefined;
-		const variant = componentVariant(device?._variantId);
-		const name = variant?.reference !== undefined ? this.message(variant.size) : this.itemName(this.curr_name.split(":")[0]);
+		const name = this.objectSummaryName(this.curr_name.split(":")[0], device?._variantId);
 		const material = device?._material && this.itemName(device._material.name);
 		const emptyLabel = this.message("Objekt leeren");
 		const saveLabel = this.builderText("Save contents as mixture", "Inhalt als Gemisch speichern");
