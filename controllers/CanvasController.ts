@@ -23,6 +23,7 @@ const CABLE_TASK = "cables";
 const TEXTURE_LOAD_OPTIONS = { resolution: 2, scaleMode: "linear", autoGenerateMipmaps: true, maxAnisotropy: 4 } as const;
 /** Name of the background task that keeps the canvas refreshing while vessel particles move. */
 const VESSEL_TASK = "vessel-anim";
+const OBJECT_MARKER_PADDING_PX = 5;
 
 /**
  * Component types that hang into a vessel and therefore have to overlap it:
@@ -77,7 +78,7 @@ export class CanvasController implements ReactiveController {
 	private endTarget?: ElectricDeviceView;
 	private selection: PIXI.Container[] = [];
 	private marquee?: { id: number; start: PIXI.PointData; end?: PIXI.PointData; pressed?: PIXI.Container };
-	private groupDrag?: { id: number; origin: PIXI.PointData; anchor: PIXI.PointData; moved: boolean;
+	private groupDrag?: { id: number; origin: PIXI.PointData; anchor: { sprite: PIXI.Container; x: number; y: number }; moved: boolean;
 		offset: PIXI.PointData; items: { sprite: PIXI.Container; x: number; y: number }[] };
 	private touchListeners?: AbortController;
 	private touches = new Map<number, { x: number; y: number }>();
@@ -250,12 +251,15 @@ export class CanvasController implements ReactiveController {
 			if (this.showGrid) this.grid.update(this.camera);
 		}
 		this.updateScaleReadouts();
+		this.drawSelection();
 		this.host.requestUpdate();
-		this.host.requestCanvasRender();
 	}
 
-	snapPosition(x: number, y: number): PIXI.PointData {
-		return this.showGrid ? this.camera.snapToGrid(x, y) : { x, y };
+	private snapObjectPosition(sprite: PIXI.Container, x: number, y: number): PIXI.PointData {
+		if (!this.showGrid) return { x, y };
+		const { width, height } = this.footprintSize(sprite);
+		const padding = OBJECT_MARKER_PADDING_PX / this.camera.zoom;
+		return this.camera.snapToGrid(x, y, -width / 2 - padding, -height / 2 - padding);
 	}
 
 	/**
@@ -274,17 +278,21 @@ export class CanvasController implements ReactiveController {
 	 */
 	freePlacement(sprite: PIXI.Container, x: number, y: number): PIXI.PointData {
 		const { width, height } = this.footprintSize(sprite);
+		const snapped = this.snapObjectPosition(sprite, x, y);
+		const cell = this.camera.gridCellWidth;
+		const stride = (size: number) => this.showGrid ? Math.max(1, Math.round(size / (2 * cell))) * cell : size / 2;
+		const strideX = stride(width), strideY = stride(height);
 		for (const [stepX, stepY] of PLACEMENT_OFFSETS) {
-			const candidate = { x: x + stepX * width * 0.5, y: y + stepY * height * 0.5 };
+			const candidate = { x: snapped.x + stepX * strideX, y: snapped.y + stepY * strideY };
 			if (!this.collidesAt([{ sprite, x: candidate.x, y: candidate.y }])) return candidate;
 		}
-		return { x, y };
+		return snapped;
 	}
 
 	/**
 	 * The drawn size of a sprite in world units. The artboard is recorded when
 	 * the view is built, because the bounds of a container also cover the
-	 * particles and the pour stream a vessel draws outside its glass.
+	 * particles a vessel can draw outside its glass.
 	 *
 	 * @private
 	 * @param {PIXI.Container} sprite - the sprite
@@ -507,13 +515,14 @@ export class CanvasController implements ReactiveController {
 			Math.abs(end.x - start.x), Math.abs(end.y - start.y));
 	}
 
-	private drawObjectMarker({ x, y, width, height }: PIXI.Bounds, color: number): void {
-		const padding = 5;
-		const length = Math.min(13, (Math.min(width, height) + 2 * padding) * .42);
+	private drawObjectMarker({ x, y, width, height }: PIXI.Bounds, color: number, selected: boolean): void {
+		const padding = OBJECT_MARKER_PADDING_PX;
+		const frame = { left: x - padding, right: x + width + padding, top: y - padding, bottom: y + height + padding };
+		const { left, right, top, bottom } = selected && this.showGrid
+			? this.camera.encloseInGrid(frame.left, frame.top, frame.right, frame.bottom) : frame;
+		const length = Math.min(13, Math.min(right - left, bottom - top) * .42);
 		const radius = Math.min(4, length * .6);
-		const left = x - padding, right = x + width + padding;
-		const top = y - padding, bottom = y + height + padding;
-		this.selectionOverlay.roundRect(left, top, width + 2 * padding, height + 2 * padding, radius)
+		this.selectionOverlay.roundRect(left, top, right - left, bottom - top, radius)
 			.fill({ color, alpha: .055 });
 		// A light edge keeps the corners legible against both glass and dark devices.
 		for (const [stroke, thickness] of [[0xffffff, 3.8], [color, 1.8]]) {
@@ -538,13 +547,13 @@ export class CanvasController implements ReactiveController {
 		const { width: canvasWidth, height: canvasHeight } = this.camera;
 		for (const sprite of sprites) {
 			const bounds = sprite.getBounds();
-			if (sprite !== diagramSource && sprite !== transferTarget) this.drawObjectMarker(bounds, 0x0876a8);
+			if (sprite !== diagramSource && sprite !== transferTarget) this.drawObjectMarker(bounds, 0x0876a8, true);
 			if (!movingObjects && bounds.maxX > 0 && bounds.maxY > 0 && bounds.minX < canvasWidth && bounds.minY < canvasHeight) {
 				visibleBounds.addBounds(bounds);
 			}
 		}
-		if (diagramSource && diagramSource !== transferTarget) this.drawObjectMarker(diagramSource.getBounds(), 0x6d48ad);
-		if (transferTarget?.parent) this.drawObjectMarker(transferTarget.getBounds(), 0x087b70);
+		if (diagramSource && diagramSource !== transferTarget) this.drawObjectMarker(diagramSource.getBounds(), 0x6d48ad, sprites.includes(diagramSource));
+		if (transferTarget?.parent) this.drawObjectMarker(transferTarget.getBounds(), 0x087b70, sprites.includes(transferTarget));
 		const rect = this.selectionRectangle();
 		if (rect) {
 			this.selectionOverlay.roundRect(rect.x, rect.y, rect.width, rect.height, 3)
@@ -601,7 +610,7 @@ export class CanvasController implements ReactiveController {
 		const dy = current.y - drag.origin.y;
 		if (!drag.moved && dx === 0 && dy === 0) return;
 		drag.moved = true;
-		const anchor = this.snapPosition(drag.anchor.x + dx, drag.anchor.y + dy);
+		const anchor = this.snapObjectPosition(drag.anchor.sprite, drag.anchor.x + dx, drag.anchor.y + dy);
 		const wantedX = anchor.x - drag.anchor.x;
 		const wantedY = anchor.y - drag.anchor.y;
 		const moving = this.groupMoving(drag.items);
@@ -1213,7 +1222,7 @@ export class CanvasController implements ReactiveController {
 		if (this.host.dragObject) {
 			// move so the grabbed point stays under the pointer (offset preserved)
 			const local = this.host.dragObject.parent.toLocal(event.global);
-			const position = this.snapPosition(
+			const position = this.snapObjectPosition(this.host.dragObject,
 				local.x + this._dragOffset.x,
 				local.y + this._dragOffset.y
 			);

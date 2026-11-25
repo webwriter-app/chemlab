@@ -1684,8 +1684,7 @@ export class ChemLab extends LitElementWw {
 				const point = this.canvas.worldPointFromViewport(pointer.clientX, pointer.clientY);
 				preview.visible = !!point;
 				if (point) {
-					const snapped = this.canvas.snapPosition(point.x, point.y);
-					preview.position.copyFrom(this.canvas.freePlacement(preview, snapped.x, snapped.y));
+					preview.position.copyFrom(this.canvas.freePlacement(preview, point.x, point.y));
 				}
 				this.requestCanvasRender();
 			},
@@ -1754,9 +1753,8 @@ export class ChemLab extends LitElementWw {
 	 * @returns {PIXI.PointData}
 	 */
 	private freePlacementFor(variant: ComponentVariant, x: number, y: number): PIXI.PointData {
-		const snapped = this.canvas.snapPosition(x, y);
 		const preview = this.canvas.createPlacementPreview(this.previewModel(variant));
-		const position = this.canvas.freePlacement(preview, snapped.x, snapped.y);
+		const position = this.canvas.freePlacement(preview, x, y);
 		preview.destroy({ children: true });
 		return position;
 	}

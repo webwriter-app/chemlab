@@ -83,3 +83,29 @@ test("an empty or unmeasurable layout leaves the camera alone", () => {
 	assert.equal(camera.zoom, 2);
 	assert.equal(camera.x, 100);
 });
+
+test("a dragged object's anchor lands on the grid drawn at the current zoom", () => {
+	const camera = new WorkspaceCamera();
+	camera.resize(737, 503);
+	camera.panBy(33.4, -22.1);
+	const anchorX = -27.3, anchorY = -54.6;
+	for (const factor of [.47, 3.2, 2.1]) {
+		camera.zoomAt(factor, 137, 229);
+		const step = camera.gridCellWidth;
+		const { x, y } = camera.snapToGrid(-45.3, 170.2, anchorX, anchorY);
+		assert.ok(Math.abs((x + anchorX) / step - Math.round((-45.3 + anchorX) / step)) < 1e-8);
+		assert.ok(Math.abs((y + anchorY) / step - Math.round((170.2 + anchorY) / step)) < 1e-8);
+	}
+});
+
+test("the selection outline encloses its contents on visible grid lines after zoom and pan", () => {
+	const camera = new WorkspaceCamera();
+	camera.resize(737, 503);
+	camera.zoomAt(1.27, 129, 150);
+	camera.panBy(26.5, -37.2);
+	const step = camera.gridCellWidth;
+	const start = camera.toScreen(-3 * step, 2 * step);
+	const end = camera.toScreen(step, 8 * step);
+	const frame = camera.encloseInGrid(start.x, start.y + 1, end.x - 1, end.y);
+	assert.deepEqual(frame, { left: start.x, top: start.y, right: end.x, bottom: end.y });
+});

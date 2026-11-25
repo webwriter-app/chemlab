@@ -28,9 +28,22 @@ export class WorkspaceCamera {
 		return base * 2 ** Math.ceil(Math.log2(MIN_GRID_CELL_PX / (base * this.zoom)));
 	}
 
-	snapToGrid(x: number, y: number) {
+	snapToGrid(x: number, y: number, anchorX = 0, anchorY = 0) {
 		const step = this.gridCellWidth;
-		return { x: Math.round(x / step) * step, y: Math.round(y / step) * step };
+		return { x: Math.round((x + anchorX) / step) * step - anchorX,
+			y: Math.round((y + anchorY) / step) * step - anchorY };
+	}
+
+	/** Enclose a screen-space rectangle with the grid lines drawn at this zoom. */
+	encloseInGrid(left: number, top: number, right: number, bottom: number) {
+		const min = this.toWorld(left, top);
+		const max = this.toWorld(right, bottom);
+		const step = this.gridCellWidth;
+		// Avoid adding a cell when projecting an edge already on the grid.
+		const tolerance = 1e-8;
+		const start = this.toScreen(Math.floor(min.x / step + tolerance) * step, Math.floor(min.y / step + tolerance) * step);
+		const end = this.toScreen(Math.ceil(max.x / step - tolerance) * step, Math.ceil(max.y / step - tolerance) * step);
+		return { left: start.x, top: start.y, right: end.x, bottom: end.y };
 	}
 
 	resetZoom(): void {
