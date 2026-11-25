@@ -35,6 +35,12 @@ export const periodicTableStyles = css`
 		color: var(--sl-color-neutral-900, #1c1c1e);
 		background: var(--sl-color-neutral-0, #ffffff);
 
+		/* The cell has a size of its own instead of a share of the widget: it is
+		   44 px wide at most and one cell height tall, and every pixel the widget
+		   grows beyond that lands in the gaps between the cells. A wider widget
+		   therefore shows the same tiles further apart, not bigger tiles, and a
+		   changed aspect ratio only moves the cells apart on the axis that grew. */
+		--pt-cell-width: 2.75rem;
 		--pt-cell-height: 2.85rem;
 		/* Height of one control in the ribbon. The family tags, the icon buttons
 		   and the mode switch all take it, so the bar reads as one row of chips. */
@@ -427,12 +433,22 @@ export const periodicTableStyles = css`
 		scrollbar-width: thin;
 	}
 
+	/* The tracks are the cell size and nothing more: the columns are capped at
+	   --pt-cell-width and shrink below it when the pane is narrow, the rows keep
+	   --pt-cell-height. space-between hands the space the widget has left to the
+	   gaps, so enlarging the widget spreads the table instead of blowing up the
+	   tiles; the grid takes the height of the pane so the rows can spread
+	   downwards as well, and keeps its natural height when it needs to scroll. */
 	.grid {
 		display: grid;
-		grid-template-columns: var(--pt-gutter) repeat(18, minmax(0, 1fr));
+		grid-template-columns: var(--pt-gutter)
+			repeat(18, minmax(0, var(--pt-cell-width)));
 		grid-template-rows:
 			auto repeat(7, minmax(var(--pt-cell-height), auto))
 			var(--pt-series-gap) repeat(2, minmax(var(--pt-cell-height), auto));
+		justify-content: space-between;
+		align-content: space-between;
+		min-block-size: 100%;
 		gap: 2px;
 		min-width: 30rem;
 	}
@@ -630,10 +646,11 @@ export const periodicTableStyles = css`
 		white-space: nowrap;
 	}
 
-	/* The name shows where the cell itself is wide enough to hold it. The query
-	   measures the content box, so the threshold sits below the 47 px a cell
-	   reaches at a 1000 px host. */
-	@container (min-width: 2.75rem) {
+	/* The name shows where the cell itself is wide enough to hold it. The cells
+	   stop at --pt-cell-width, so a name means a table with room to spare: the
+	   query measures the content box, which is two pixels narrower than the
+	   44 px a full cell reaches. */
+	@container (min-width: 2.5rem) {
 		.cell-name {
 			display: block;
 		}
