@@ -1931,19 +1931,35 @@ export const style = css`
 		background: var(--canvas-control-surface);
 	}
 	.selection-info {
+		--selection-panel-width: 14.5rem;
 		position: absolute;
 		inset: 0 auto auto 0;
 		box-sizing: border-box;
 		inline-size: max-content;
-		max-inline-size: min(13rem, calc(100% - 8px));
+		max-inline-size: min(var(--selection-panel-width), calc(100% - 8px));
 		max-block-size: min(11rem, 36vh, calc(100% - 8px));
-		overflow: auto;
+		overflow: hidden auto;
+		scrollbar-width: thin;
 		padding: 5px;
 		background: var(--lab-card-surface);
 		border: 1px solid var(--lab-card-border);
 		border-radius: 5px;
 		box-shadow: var(--lab-panel-shadow);
 		font-size: 0.85rem;
+		overflow-wrap: break-word;
+	}
+	.selection-info[data-wide],
+	#contextInfoBox:has(#contextMolInfo:not([hidden]), .device-controls, .electrical-settings[open], .mixture-save-controls) {
+		inline-size: var(--selection-panel-width);
+	}
+	.selection-info sl-tag { min-inline-size: 0; max-inline-size: 100%; }
+	.selection-info sl-tag::part(base) {
+		box-sizing: border-box;
+		min-block-size: calc(var(--sl-input-height-small) * .8);
+		block-size: auto;
+		line-height: 1.2;
+		padding-block: 2px;
+		white-space: normal;
 		overflow-wrap: anywhere;
 	}
 	#contextInfoBox {
@@ -1969,6 +1985,15 @@ export const style = css`
 		inset-block-start: 0;
 		z-index: 2;
 		background: var(--lab-card-surface);
+		flex-wrap: wrap;
+	}
+	.object-summary-actions {
+		display: flex;
+		flex-wrap: wrap;
+		align-items: center;
+		gap: 4px;
+		margin-inline-start: auto;
+		max-inline-size: 100%;
 	}
 	.object-summary-action {
 		display: grid;
@@ -2027,7 +2052,7 @@ export const style = css`
 		outline: var(--sl-focus-ring);
 	}
 	.electrical-settings {
-		inline-size: 10.5rem;
+		inline-size: 100%;
 		max-inline-size: 100%;
 	}
 	.electrical-settings::part(base) {
@@ -2075,11 +2100,13 @@ export const style = css`
 		margin: 0;
 	}
 	#contextMolInfo {
-		inline-size: 12rem;
+		inline-size: 100%;
 		max-inline-size: 100%;
+		container: vessel-carousel / inline-size;
 		margin-block: 5px;
 		--slide-gap: 0px;
 	}
+	#contextMolInfo[hidden] { display: none; }
 	#contextMolInfo::part(base) {
 		gap: 4px 0;
 	}
@@ -2144,21 +2171,24 @@ export const style = css`
 		display: grid;
 		gap: 2px;
 		line-height: 1.25;
+		min-inline-size: 0;
 	}
 	#contextMolInfo .vessel-carousel-title {
 		display: flex;
+		flex-wrap: wrap;
 		align-items: center;
 		gap: 4px;
 		min-inline-size: 0;
 	}
 	#contextMolInfo .vessel-carousel-title > h5 {
-		flex: 1 1 auto;
+		flex: 1 0 min(8ch, 100%);
 		min-inline-size: 0;
 	}
 	/* The slide already sits on the inset surface, so its icon needs the card
 	   surface to stay visible as a control. */
 	#contextMolInfo .vessel-carousel-title > .structure-action {
 		background: var(--lab-card-surface);
+		margin-inline-start: auto;
 	}
 	#contextMolInfo .vessel-carousel-quantities :is(h5, p) {
 		margin: 0;
@@ -2171,6 +2201,16 @@ export const style = css`
 		display: block;
 		font-variant-numeric: tabular-nums;
 		color: var(--lab-card-secondary-text);
+	}
+	@container vessel-carousel (max-width: 9.5rem) {
+		#contextMolInfo .vessel-carousel-card {
+			grid-template-columns: minmax(0, 1fr);
+			justify-items: stretch;
+		}
+		#contextMolInfo .vessel-carousel-thumbnail {
+			inline-size: min(3.5rem, 100%);
+			justify-self: center;
+		}
 	}
 	/* A deposit sits on the electrode, not in the vessel, so its card is
 	   outlined differently and says where the metal is. */
@@ -2223,10 +2263,10 @@ export const style = css`
 	}
 	#amountMenu {
 		display: grid;
+		grid-template-columns: minmax(0, 1fr);
 		gap: 5px;
 		z-index: 2;
-		inline-size: min(12rem, calc(100% - 8px));
-		max-inline-size: none;
+		container: transfer-card / inline-size;
 		max-block-size: min(16rem, calc(100% - 8px));
 		padding: 5px;
 	}
@@ -2248,7 +2288,7 @@ export const style = css`
 	}
 	.amount-menu-route {
 		display: grid;
-		grid-template-columns: minmax(0, 1.15fr) auto minmax(0, 1fr);
+		grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
 		align-items: center;
 		gap: 3px;
 	}
@@ -2268,6 +2308,23 @@ export const style = css`
 		display: grid;
 		place-items: center;
 		color: var(--lab-card-secondary-text);
+	}
+	@container transfer-card (max-width: 10.5rem) {
+		.amount-menu-heading { flex-wrap: wrap; }
+		.amount-menu-actions { margin-inline-start: auto; }
+		.amount-menu-route { grid-template-columns: minmax(0, 1fr); }
+		.amount-menu-arrow svg { rotate: 90deg; }
+		#amountMenu .value-control-caption { flex-wrap: wrap; }
+		#amountMenu .value-control-hint { white-space: normal; }
+		.transfer-result { flex-wrap: wrap; }
+	}
+	@container (max-width: 7rem) {
+		.amount-menu-route sl-tag::part(base) {
+			font-size: .675rem;
+			padding-inline: 3px;
+		}
+		.selection-info .value-control-row { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+		.selection-info .value-control-number { grid-area: 1 / 1 / 2 / -1; }
 	}
 	.amount-menu-actions {
 		flex: none;
@@ -2310,13 +2367,8 @@ export const style = css`
 	}
 	.transfer-result strong { color: #17665f; white-space: nowrap; }
 	#amountMenu[data-transfer-phase="running"] .amount-menu-arrow { color: #087b70; }
-	#amountMenu[data-transfer-phase="running"] .amount-menu-arrow svg { animation: transfer-arrow 650ms ease-in-out infinite alternate; }
-	@keyframes transfer-arrow {
-		from { opacity: .55; transform: translateX(-1px); }
-		to { opacity: 1; transform: translateX(2px); }
-	}
 	@media (prefers-reduced-motion: reduce) {
-		#amountMenu[data-anchored], #amountMenu[data-transfer-phase="running"] .amount-menu-arrow svg { animation: none; }
+		#amountMenu[data-anchored] { animation: none; }
 		.transfer-progress-fill { transition: none; }
 	}
 	.amount-editor {
@@ -2362,17 +2414,7 @@ export const style = css`
 	#groupSelectionInfo {
 		display: grid;
 		gap: 5px;
-		inline-size: min(13rem, calc(100% - 8px));
 		max-block-size: min(14rem, calc(100% - 8px));
-		scrollbar-width: thin;
-	}
-	#groupSelectionInfo .object-summary-heading { flex-wrap: wrap; }
-	.group-selection-actions {
-		display: flex;
-		flex: none;
-		align-items: center;
-		gap: 4px;
-		margin-inline-start: auto;
 	}
 	#groupSelectionInfo .compact-control-button { --sl-input-height-small: 20px; }
 	.group-selection-list {
@@ -2407,15 +2449,6 @@ export const style = css`
 		text-align: start;
 		cursor: pointer;
 	}
-	#groupSelectionInfo sl-tag { max-inline-size: 100%; }
-	#groupSelectionInfo sl-tag::part(base) {
-		min-block-size: calc(var(--sl-input-height-small) * .8);
-		block-size: auto;
-		line-height: 1.2;
-		padding-block: 2px;
-		white-space: normal;
-		overflow-wrap: anywhere;
-	}
 	.group-selection-object:hover sl-tag::part(base) {
 		background: var(--sl-color-primary-100);
 		border-color: var(--sl-color-primary-300);
@@ -2434,8 +2467,12 @@ export const style = css`
 		border: 1px solid var(--lab-card-border);
 		border-radius: 4px;
 	}
-	.device-controls[data-adjustable] { inline-size: 10.5rem; }
-	.device-controls:has(#dispenseBurette) { min-inline-size: min(10.5rem, 100%); inline-size: 100%; }
+	.device-controls[data-adjustable] {
+		inline-size: 100%;
+		box-sizing: border-box;
+		container: device-controls / inline-size;
+	}
+	.device-controls .value-control-caption { flex-wrap: wrap; }
 	.device-actions, .device-readouts {
 		display: flex;
 		flex-wrap: wrap;

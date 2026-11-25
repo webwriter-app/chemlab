@@ -107,8 +107,6 @@ export class VesselView extends Container {
 	private particles: SolidParticle[] = [];
 	/** last reported escaped gas amount, to detect a new evolution */
 	private gasAmount = 0;
-	/** remaining pour stream visibility in ms */
-	private streamMs = 0;
 	/** remaining surface wobble in ms, plus its age for the decay curve */
 	private wobbleMs = 0;
 	private wobbleAge = 0;
@@ -282,7 +280,6 @@ export class VesselView extends Container {
 				}))
 			: [];
 		if (hint === "pour" && liquid) {
-			this.streamMs = 450;
 			if (this.wobbleMs <= 0) this.wobbleAge = 0;
 			this.wobbleMs = 850;
 		}
@@ -369,8 +366,8 @@ export class VesselView extends Container {
 
 	/**
 	 * Advances the vessel animations by one frame: settles the drawn
-	 * sediment onto its target, integrates the solid particles, and runs
-	 * the pour stream and the decaying surface wobble.
+	 * sediment onto its target, integrates the particles, and damps
+	 * the surface wobble after a dose.
 	 *
 	 * @private
 	 * @param {number} dtMs - elapsed time in milliseconds
@@ -432,18 +429,16 @@ export class VesselView extends Container {
 			active = true;
 		}
 
-		// pour stream and surface wobble decay after a dose
-		if (this.streamMs > 0 || this.wobbleMs > 0) {
-			this.streamMs = Math.max(0, this.streamMs - dtMs);
+		if (hadParticles) this.drawParticles();
+		if (this.wobbleMs > 0) {
 			this.wobbleMs = Math.max(0, this.wobbleMs - dtMs);
 			this.wobbleAge = 850 - this.wobbleMs;
-			this.drawStream();
 			amplitude = this.wobbleMs > 0
 				? 0.0035 * Math.exp(-this.wobbleAge / 300) * Math.sin(this.wobbleAge * Math.PI * 2 / 260)
 				: 0;
 			fillChanged = true;
 			active = true;
-		} else if (hadParticles) this.drawParticles();
+		}
 		if (fillChanged) this.updateFill(this.fillFraction, this.liquidFilled, drawn, this.sedimentColor, amplitude);
 
 		return active;
@@ -461,20 +456,6 @@ export class VesselView extends Container {
 			}
 			this.particlesShape.circle(particle.x, particle.y, particle.size).fill({ color: particle.color, alpha: 0.9 });
 		}
-	}
-
-	/** Draws the short pour stream from the mouth to the liquid surface. */
-	private drawStream(): void {
-		this.drawParticles();
-		if (this.streamMs <= 0) return;
-		const alpha = Math.min(1, this.streamMs / 200) * 0.6;
-		const top = this.profile[0][0];
-		const surface = this.uprightSurface(this.fillFraction);
-		const x = this.radiusAt(top) * 0.25;
-		this.particlesShape.moveTo(x, top - 8)
-			.lineTo(x, surface - 0.3)
-			.stroke({ color: 0x4592b7, width: 0.55, alpha, cap: "round" });
-		this.particlesShape.circle(x, surface, 0.9).fill({ color: 0x4592b7, alpha: alpha * 0.8 });
 	}
 
 	updateAngle(): void {

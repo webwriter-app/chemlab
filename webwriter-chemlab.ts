@@ -2487,7 +2487,7 @@ export class ChemLab extends LitElementWw {
 		this.carouselMixture = mixture;
 		const entries = vesselCarouselEntries(mixture, equilibrium, this.vesselPlatings(mixture));
 		const concentrationLine = (concentration: number) => Number.isFinite(concentration)
-			? html`<p>c: ${concentration.toExponential(2)} mol/L</p>` : nothing;
+			? html`<p>c: ${concentration.toExponential(2)} mol/L</p>` : nothing;
 		const slide = (thumbnail: unknown, title: string, details: unknown, cardClass = "", model?: chemlib.Molecule) => html`
 			<sl-carousel-item>
 				<div class="vessel-carousel-card ${cardClass}">
@@ -2587,14 +2587,14 @@ export class ChemLab extends LitElementWw {
 		const summary = this.contextMixInfo as HTMLDivElement | undefined;
 		if (!echem || !carousel || !summary) return;
 		echem.hidden = !(component instanceof chemlib.ElectricComponent);
-		carousel.style.display = "none";
+		carousel.hidden = true;
 		summary.style.display = "none";
 		if (component instanceof chemlib.ChemComponent) {
 			const mixture = component._content;
 			const hasContents = mixture._activeMolecules.length > 0;
 			const equilibrium = recordedEquilibrium ?? (hasContents ? this.mixtureEquilibrium(mixture) : undefined);
 			if (hasContents) {
-				carousel.style.display = "";
+				carousel.hidden = false;
 				try {
 					this.renderVesselCarousel(mixture, equilibrium);
 				} catch (error) {
@@ -2645,7 +2645,7 @@ export class ChemLab extends LitElementWw {
 		this.contextMixInfo.style.display = "";
 		this.renderScoped(this.contextMixInfo, html`
 			${amount > 0 && Number.isFinite(amount) ? html`
-				<sl-tag size="small" variant="neutral">${liquid ? `${amount.toFixed(1)} mL` : `${this.formatAmount(amount, 3)} g`}</sl-tag>` : nothing}
+				<sl-tag size="small" variant="neutral">${liquid ? `${amount.toFixed(1)} mL` : `${this.formatAmount(amount, 3)} g`}</sl-tag>` : nothing}
 			${color === undefined ? nothing : html`
 				<sl-tag class="vessel-ph-tag" size="small" variant="neutral"
 					style=${`--indicator-color: ${color}; --indicator-text: ${pHTextColor(color)}`}>pH ${pH}</sl-tag>`}
@@ -4755,7 +4755,7 @@ export class ChemLab extends LitElementWw {
 		const fillLabel = `${this.formatAmount(volume, 4)} / ${this.formatAmount(capacity, 5)} mL`;
 		const changeAmount = (value: number) => this.setAmount(value);
 		return html`
-			<section id="amountMenu" class="selection-info" data-transfer-phase=${menu ? "manual" : feedback.phase}
+			<section id="amountMenu" class="selection-info" data-wide data-transfer-phase=${menu ? "manual" : feedback.phase}
 				tabindex=${menu ? -1 : nothing} contenteditable="false" aria-labelledby="amountMenuTitle"
 				@keydown=${this.handleAmountMenuKey}>
 				<div class="amount-menu-heading">
@@ -4824,10 +4824,10 @@ export class ChemLab extends LitElementWw {
 			.map(component => [`${component._type}:${component._id}`, component]));
 		const focusCanvas = () => this.app?.canvas.focus({ preventScroll: true });
 		return html`
-			<section id="groupSelectionInfo" class="selection-info" aria-label=${title} contenteditable="false">
+			<section id="groupSelectionInfo" class="selection-info" data-wide aria-label=${title} contenteditable="false">
 				<div class="object-summary-heading">
 					<sl-tag size="small" variant="primary">${count}</sl-tag>
-					<div class="group-selection-actions">
+					<div class="object-summary-actions">
 						<sl-button-group label=${title}>
 							${this.renderCompactAction(center, "fit", () => this.canvas.centerComponents(this.canvas.selectedObjects.map(({ label }) => label)))}
 							${this.renderCompactAction(clear, "cancel", () => {
@@ -5362,28 +5362,30 @@ export class ChemLab extends LitElementWw {
 			<section id="contextInfoBox" class="selection-info" ?hidden=${!this.curr_obj}>
 				<div class="object-summary-heading">
 					<sl-tag size="small" variant="primary" title=${material || nothing}>${name}</sl-tag>
-					${device ? this.renderElectricalPower(device) : nothing}
-					${vessel?._content._activeMolecules.length ? html`
-						<button type="button" class="object-summary-action empty-vessel"
-							aria-label=${emptyLabel} title=${emptyLabel} @click=${() => this.emptyVessel(vessel)}>
-							<svg viewBox="0 0 16 16" width="12" height="12" fill="none" stroke="currentColor"
-								stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-								<path d="M1.5 7 7 1.5 11 5.5 9 5.5 5 9.5a1 1 0 0 1-1.5 0L1.5 7Z"/>
-								<path d="M11.5 8.5c.8 1 2 2.4 2 3.5a2 2 0 0 1-4 0c0-1.1 1.2-2.5 2-3.5Z"/>
-							</svg>
-						</button>
-						<button id="saveVesselMixture" type="button" class="object-summary-action save-mixture"
-							aria-label=${saveLabel} title=${saveLabel} aria-expanded=${this.mixtureDraft?.vessel === vessel}
-							aria-controls="mixtureSaveControls" @click=${() => this.toggleMixtureDraft(vessel)}>
-							<svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor"
-								stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d=${CONTROL_ICONS.save}/></svg>
-						</button>` : nothing}
-					${this.renderSelectionDeleteButton(() => this._removeSprite())}
+					<div class="object-summary-actions">
+						${device ? this.renderElectricalPower(device) : nothing}
+						${vessel?._content._activeMolecules.length ? html`
+							<button type="button" class="object-summary-action empty-vessel"
+								aria-label=${emptyLabel} title=${emptyLabel} @click=${() => this.emptyVessel(vessel)}>
+								<svg viewBox="0 0 16 16" width="12" height="12" fill="none" stroke="currentColor"
+									stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+									<path d="M1.5 7 7 1.5 11 5.5 9 5.5 5 9.5a1 1 0 0 1-1.5 0L1.5 7Z"/>
+									<path d="M11.5 8.5c.8 1 2 2.4 2 3.5a2 2 0 0 1-4 0c0-1.1 1.2-2.5 2-3.5Z"/>
+								</svg>
+							</button>
+							<button id="saveVesselMixture" type="button" class="object-summary-action save-mixture"
+								aria-label=${saveLabel} title=${saveLabel} aria-expanded=${this.mixtureDraft?.vessel === vessel}
+								aria-controls="mixtureSaveControls" @click=${() => this.toggleMixtureDraft(vessel)}>
+								<svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor"
+									stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d=${CONTROL_ICONS.save}/></svg>
+							</button>` : nothing}
+						${this.renderSelectionDeleteButton(() => this._removeSprite())}
+					</div>
 				</div>
 				${vessel ? html`${this.renderMixtureDraft(vessel)}${this.renderValveControls(vessel)}` : nothing}
 				<div id="contextEchemInfo" ?hidden=${!device}></div>
 				<sl-carousel id="contextMolInfo" pagination mouse-dragging slides-per-page="1" slides-per-move="1"
-					aria-label=${this.message("Inhalt")} style="display: none"></sl-carousel>
+					aria-label=${this.message("Inhalt")} hidden></sl-carousel>
 				<div id="contextMixInfo" style="display: none"></div>
 				${device ? html`${this.renderElectricalControls(device)}${this.renderElectricalSettings(device)}` : nothing}
 			</section>
