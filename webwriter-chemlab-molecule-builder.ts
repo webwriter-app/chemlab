@@ -1550,7 +1550,6 @@ export class ChemLabMoleculeBuilder extends LitElementWw {
 				"A larger electronegativity difference gives a stronger colour contrast. Grey bonds have equal or unavailable values.",
 				"Je größer der Unterschied in der Elektronegativität, desto stärker der Farbkontrast. Graue Bindungen haben gleiche oder unbekannte Werte.",
 			)}>
-				<span class="summary-caption">${this.#t("Qualitative bond polarity · Pauling Δχ", "Qualitative Bindungspolarität · Pauling-Δχ")}</span>
 				<span class="structure-legend">
 					<span style=${`--swatch: ${POLARITY_KEY.poor}`}>${this.#t("Electron-poor", "Elektronenärmer")}</span>
 					<span style=${`--swatch: ${POLARITY_KEY.rich}`}>${this.#t("Electron-rich", "Elektronenreicher")}</span>

@@ -9391,7 +9391,6 @@ fn mainFragment(input: FragmentInput){
 					${_(this,y,H).call(this,"Electron density","Elektronendichte")}</sl-button>`:z}
 			</div>`:z}
 			${d&&this.showPolarity?T`<div class="fields" title=${_(this,y,H).call(this,"A larger electronegativity difference gives a stronger colour contrast. Grey bonds have equal or unavailable values.","Je gr\xF6\xDFer der Unterschied in der Elektronegativit\xE4t, desto st\xE4rker der Farbkontrast. Graue Bindungen haben gleiche oder unbekannte Werte.")}>
-				<span class="summary-caption">${_(this,y,H).call(this,"Qualitative bond polarity \xB7 Pauling \u0394\u03C7","Qualitative Bindungspolarit\xE4t \xB7 Pauling-\u0394\u03C7")}</span>
 				<span class="structure-legend">
 					<span style=${`--swatch: ${cs.poor}`}>${_(this,y,H).call(this,"Electron-poor","Elektronen\xE4rmer")}</span>
 					<span style=${`--swatch: ${cs.rich}`}>${_(this,y,H).call(this,"Electron-rich","Elektronenreicher")}</span>
