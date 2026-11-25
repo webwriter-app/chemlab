@@ -2223,12 +2223,18 @@ export const style = css`
 	}
 	#amountMenu {
 		display: grid;
-		gap: 4px;
+		gap: 5px;
 		z-index: 2;
 		inline-size: min(12rem, calc(100% - 8px));
 		max-inline-size: none;
 		max-block-size: min(16rem, calc(100% - 8px));
 		padding: 5px;
+	}
+	#amountMenu:not([data-transfer-phase="manual"]) { pointer-events: none; }
+	#amountMenu[data-anchored] { animation: transfer-card-in 130ms ease-out; }
+	@keyframes transfer-card-in {
+		from { opacity: 0; }
+		to { opacity: 1; }
 	}
 	.amount-menu-heading {
 		display: flex;
@@ -2266,11 +2272,52 @@ export const style = css`
 	.amount-menu-actions {
 		flex: none;
 	}
-	.volume-bar {
-		border-radius: var(--sl-border-radius-small);
-		--amount-fill: color-mix(in srgb, var(--sl-color-primary-500) 16%, transparent);
-		background: linear-gradient(to right, var(--amount-fill) var(--amount-progress), transparent var(--amount-progress)),
-			color-mix(in srgb, var(--sl-color-primary-500) 7%, var(--sl-color-neutral-0));
+	.transfer-meter, .transfer-hold-track {
+		position: relative;
+		isolation: isolate;
+		overflow: hidden;
+		border-radius: 4px;
+		border: 1px solid var(--lab-card-border);
+		background: var(--lab-card-inset);
+	}
+	.transfer-meter {
+		padding: 2px 5px;
+		text-align: center;
+		font-variant-numeric: tabular-nums;
+		font-size: .72rem;
+	}
+	.transfer-hold-track { block-size: 4px; }
+	.transfer-progress-fill {
+		position: absolute;
+		inset: 0;
+		z-index: -1;
+		transform: scaleX(var(--transfer-progress, 0));
+		transform-origin: left center;
+		transition: transform 105ms linear;
+		background: #bfe4de;
+	}
+	.transfer-hold-track .transfer-progress-fill { background: #147f73; }
+	.transfer-caption {
+		color: var(--lab-card-secondary-text);
+		font-size: .7rem;
+		line-height: 1.3;
+	}
+	.transfer-result {
+		display: flex;
+		justify-content: space-between;
+		align-items: baseline;
+		gap: 4px;
+	}
+	.transfer-result strong { color: #17665f; white-space: nowrap; }
+	#amountMenu[data-transfer-phase="running"] .amount-menu-arrow { color: #087b70; }
+	#amountMenu[data-transfer-phase="running"] .amount-menu-arrow svg { animation: transfer-arrow 650ms ease-in-out infinite alternate; }
+	@keyframes transfer-arrow {
+		from { opacity: .55; transform: translateX(-1px); }
+		to { opacity: 1; transform: translateX(2px); }
+	}
+	@media (prefers-reduced-motion: reduce) {
+		#amountMenu[data-anchored], #amountMenu[data-transfer-phase="running"] .amount-menu-arrow svg { animation: none; }
+		.transfer-progress-fill { transition: none; }
 	}
 	.amount-editor {
 		position: absolute;
@@ -2839,6 +2886,7 @@ export const style = css`
 		block-size: 36px;
 		object-fit: contain;
 	}
+	.chemical-drag-preview[hidden] { display: none; }
 	.component-tile[aria-pressed="true"],
 	.chemical-tile[aria-pressed="true"] {
 		background: var(--sl-color-primary-100);
@@ -2865,14 +2913,6 @@ export const style = css`
 		padding: 3px 22px;
 		border: 1px solid transparent;
 		border-radius: var(--sl-border-radius-medium);
-	}
-	.fill-meter {
-		position: absolute;
-		padding: 2px 4px;
-		font-size: 0.7rem;
-		font-variant-numeric: tabular-nums;
-		white-space: nowrap;
-		pointer-events: none;
 	}
 	.custom-card-actions {
 		display: flex;

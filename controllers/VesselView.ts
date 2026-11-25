@@ -283,8 +283,8 @@ export class VesselView extends Container {
 			: [];
 		if (hint === "pour" && liquid) {
 			this.streamMs = 450;
+			if (this.wobbleMs <= 0) this.wobbleAge = 0;
 			this.wobbleMs = 850;
-			this.wobbleAge = 0;
 		}
 		this.updateFill(fill, liquid, this.sedimentDrawn, sediment.color);
 	}

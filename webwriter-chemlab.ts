@@ -133,8 +133,17 @@ function concentrationPresets({ max }: ChemicalConcentration): number[] {
 type AmountSource = { name: string; recipe: DoseRecipe; dose: (volumeMl: number) => chemlib.Mixture } |
 	{ vessel: chemlib.ChemComponent };
 
+type TransferRoute = { anchor: PIXI.Container; target: chemlib.ChemComponent; from: AmountSource };
+type TransferFeedback = TransferRoute & {
+	amount: number;
+	phase: "arming" | "running" | "limit" | "dose";
+	gesture: "drop" | "press";
+	progress?: number;
+};
+
 const TRANSFER_HOLD_MS = 1500;
-const TRANSFER_HOLD_RADIUS = 6;
+const TRANSFER_HOLD_RADIUS = 10;
+const PALETTE_DRAG_THRESHOLD = 6;
 const DRAG_TRANSFER_TASK = "drag-transfer";
 const SURFACE_DISPLACEMENT_TASK = "surface-displacement";
 const MIN_TWO_PANELS_WIDTH = 560;
@@ -578,7 +587,7 @@ export class ChemLab extends LitElementWw {
 		max: number;
 	} | undefined;
 	private amountMenuObserver?: ResizeObserver;
-	@state() private accessor fillMeter: { x: number; y: number; volume: number; capacity: number } | undefined;
+	@state() private accessor transferFeedback: TransferFeedback | undefined;
 	private amountFormatLanguage?: string;
 	private amountFormatters = new Map<number, Intl.NumberFormat>();
 	@state() private accessor chemicalQuery = "";
@@ -756,7 +765,7 @@ export class ChemLab extends LitElementWw {
 		this.stopDose?.();
 		this.cancelDoseForNavigation();
 		this.closeAmountMenu();
-		this.hideFillMeter();
+		this.hideTransferFeedback();
 		this.workspaceResizeObserver?.disconnect();
 		this.workspaceResizeObserver = undefined;
 		this.workspaceClassObserver?.disconnect();
@@ -823,7 +832,14 @@ export class ChemLab extends LitElementWw {
 		if (this.canvas.selectedObjects.length || changed.has("curr_obj") || changed.has("curr_name") || changed.has("mixtureDraft")) {
 			runStep("redraw the selection", () => this.canvas.drawSelection());
 		}
-		if (changed.has("amountMenu")) runStep("place the amount menu", () => this.positionAmountMenu());
+		if (changed.has("amountMenu") || changed.has("transferFeedback")) {
+			const targetChanged = (changed.has("amountMenu") && changed.get("amountMenu")?.anchor !== this.amountMenu?.anchor)
+				|| (changed.has("transferFeedback") && changed.get("transferFeedback")?.anchor !== this.transferFeedback?.anchor);
+			runStep("place the amount menu", () => {
+				if (targetChanged && this.app) this.canvas.drawSelection();
+				else this.positionAmountMenu();
+			});
+		}
 		// The card heading comes from the template, its contents from the
 		// imperative fill. A selection change fills it after the render, and so
 		// does a card whose nodes were rebuilt or a fill that never ran, so a
@@ -1103,7 +1119,7 @@ export class ChemLab extends LitElementWw {
 		this.stopDose?.();
 		this.cancelDoseForNavigation();
 		this.closeAmountMenu();
-		this.hideFillMeter();
+		this.hideTransferFeedback();
 		this.simulation.stopExperiments();
 		this.circuits.clear();
 		this.capacitorCharges.clear();
@@ -1868,9 +1884,9 @@ export class ChemLab extends LitElementWw {
 		return prepareDose(recipe, loadMoleculeDefinition);
 	}
 
-	private hideFillMeter(): void {
+	private hideTransferFeedback(): void {
 		this.ownerDocument.defaultView?.clearTimeout(this.meterTimeout);
-		this.fillMeter = undefined;
+		this.transferFeedback = undefined;
 	}
 
 	private saveSelectedComponent(fields: Record<string, unknown>): void {
@@ -1930,7 +1946,7 @@ export class ChemLab extends LitElementWw {
 		const target = this.doseTarget(sprite);
 		if (!target) return false;
 		this.cancelDoseForNavigation();
-		this.hideFillMeter();
+		this.hideTransferFeedback();
 		const dose = this.buildDose(selected.recipe);
 		if (dose) this.openAmountMenu(target, sprite, { name: selected.name, recipe: selected.recipe, dose });
 		return true;
@@ -1944,7 +1960,12 @@ export class ChemLab extends LitElementWw {
 	}
 
 	get transferTarget(): PIXI.Container | undefined {
-		return this.dragTransfer?.anchor;
+		return this.amountMenu?.anchor ?? this.transferFeedback?.anchor;
+	}
+
+	get activePourTarget(): PIXI.Container | undefined {
+		return this.transferFeedback?.phase === "running" && "vessel" in this.transferFeedback.from
+			? this.transferFeedback.anchor : undefined;
 	}
 
 	get draggingPalette(): boolean {
@@ -1960,27 +1981,38 @@ export class ChemLab extends LitElementWw {
 			if (!current.active && Math.hypot(point.x - current.point.x, point.y - current.point.y) > TRANSFER_HOLD_RADIUS) {
 				current.point = point;
 				current.heldMs = 0;
+				current.nextDoseMs = TRANSFER_HOLD_MS;
+				this.transferFeedback = { ...this.transferFeedback, progress: 0 };
 			}
 			return;
 		}
+		this.hideTransferFeedback();
 		const drag = { anchor, target, from, point, heldMs: 0, nextDoseMs: TRANSFER_HOLD_MS, active: false, totalMl: 0 };
 		this.dragTransfer = drag;
+		const route = { anchor, target, from };
+		this.transferFeedback = { ...route, amount: 0, phase: "arming", gesture: "drop", progress: 0 };
 		this.canvas.drawSelection();
+		let progress = 0;
 		this.simulation.startTask(DRAG_TRANSFER_TASK, (elapsedMs) => {
 			drag.heldMs += elapsedMs;
-			if (drag.heldMs < drag.nextDoseMs) return;
+			if (drag.heldMs < drag.nextDoseMs) {
+				const next = Math.floor(drag.heldMs / 50) * 50;
+				if (!drag.active && next !== progress) {
+					progress = next;
+					this.transferFeedback = { ...route, amount: 0, phase: "arming", gesture: "drop", progress: next / TRANSFER_HOLD_MS };
+				}
+				return;
+			}
 			drag.active = true;
 			const steps = 1 + Math.floor((drag.heldMs - drag.nextDoseMs) / 50);
 			drag.nextDoseMs += steps * 50;
 			const requestedMl = steps * 0.4 * ("vessel" in from ? 1 : doseStepMl(from.recipe));
-			const added = "vessel" in from
-				? this.transferMeasuredVolume(from.vessel, target, requestedMl)
-				: this.addMeasuredDose(target, from.dose, requestedMl, doseHint(from.recipe));
+			const added = this.applyTransfer(route, requestedMl);
 			drag.totalMl += added;
-			this.updateFillMeter(anchor, target);
-			if (added < requestedMl - 1e-8 || target._content.contentVolume * 1000 >= target._volume - 1e-8) {
-				this.simulation.stopTask(DRAG_TRANSFER_TASK);
-			}
+			const limit = this.transferReachedLimit(route, requestedMl, added);
+			this.transferFeedback = { ...route, amount: drag.totalMl, phase: limit ? "limit" : "running", gesture: "drop" };
+			if ("vessel" in from) this.canvas.updatePourAngle(this.activePourTarget);
+			if (limit) this.simulation.stopTask(DRAG_TRANSFER_TASK);
 		});
 	}
 
@@ -1989,25 +2021,38 @@ export class ChemLab extends LitElementWw {
 		if (!drag) return;
 		this.dragTransfer = undefined;
 		this.simulation.stopTask(DRAG_TRANSFER_TASK);
-		this.hideFillMeter();
+		this.hideTransferFeedback();
 		this.canvas.drawSelection();
-		const { anchor, target, from, totalMl } = drag;
-		if (totalMl > 0) {
-			if ("vessel" in from) {
-				this.reportXApi("appended", `${from.vessel._type}:${from.vessel._id}`, {
-					response: anchor.label, success: true, completion: true,
-				});
-			} else this.saveMeasuredDose(anchor, from.recipe, totalMl);
-			if (this.curr_obj === target || ("vessel" in from && this.curr_obj === from.vessel)) this._updatePopup();
-		}
-		if (drop && !drag.active) this.openAmountMenu(target, anchor, from);
+		this.finishMeasuredTransfer(drag, drag.totalMl);
+		if (drop && !drag.active) this.openAmountMenu(drag.target, drag.anchor, drag.from);
+	}
+
+	private applyTransfer({ from, target }: TransferRoute, amount: number): number {
+		return "vessel" in from
+			? this.transferMeasuredVolume(from.vessel, target, amount)
+			: this.addMeasuredDose(target, from.dose, amount, doseHint(from.recipe));
+	}
+
+	private transferReachedLimit({ from, target }: TransferRoute, requested: number, added: number): boolean {
+		const gas = "recipe" in from && from.recipe.phase === "gas";
+		return added < requested - 1e-8 || (!gas && target._content.contentVolume * 1000 >= target._volume - 1e-8);
+	}
+
+	private finishMeasuredTransfer({ from, target, anchor }: TransferRoute, amount: number): void {
+		if (!(amount > 0)) return;
+		if ("vessel" in from) {
+			this.reportXApi("appended", `${from.vessel._type}:${from.vessel._id}`, {
+				response: anchor.label, success: true, completion: true,
+			});
+		} else this.saveMeasuredDose(anchor, from.recipe, amount);
+		if (this.curr_obj === target || ("vessel" in from && this.curr_obj === from.vessel)) this._updatePopup();
 	}
 
 	private transferMeasuredVolume(source: chemlib.ChemComponent, target: chemlib.ChemComponent, amount: number): number {
 		const result = source.transferContents({ tVolume: amount / 1000 }, target) * 1000;
 		if (result > 0) {
 			this.measurements.record([source, target], [], { source, target, volume: result });
-			this.canvas.markVesselChanged(source, "pour");
+			this.canvas.markVesselChanged(source);
 			this.canvas.markVesselChanged(target, "pour");
 		}
 		return result;
@@ -2045,8 +2090,12 @@ export class ChemLab extends LitElementWw {
 		}, { once: true });
 		view.addEventListener("pointermove", (pointer) => {
 			if (pointer.pointerId !== event.pointerId) return;
+			if (!(pointer.buttons & 1)) {
+				controller.abort();
+				return;
+			}
 			if (!this.suppressPaletteClick) {
-				if (Math.hypot(pointer.clientX - event.clientX, pointer.clientY - event.clientY) <= TRANSFER_HOLD_RADIUS) return;
+				if (Math.hypot(pointer.clientX - event.clientX, pointer.clientY - event.clientY) <= PALETTE_DRAG_THRESHOLD) return;
 				this.suppressPaletteClick = true;
 				this.stopDose?.(true);
 				this.closeAmountMenu();
@@ -2083,7 +2132,7 @@ export class ChemLab extends LitElementWw {
 		}, options);
 		button.addEventListener("lostpointercapture", () => controller.abort(), options);
 		button.addEventListener("contextmenu", (menuEvent) => menuEvent.preventDefault(), options);
-		view.addEventListener("blur", () => controller.abort(), options);
+		view.addEventListener("blur", () => controller.abort(), { signal: controller.signal });
 	}
 
 	private preventNativePaletteDrag(event: DragEvent): void {
@@ -2109,6 +2158,7 @@ export class ChemLab extends LitElementWw {
 			const y = (point.y - bounds.top) * container.offsetHeight / bounds.height - container.clientTop;
 			preview.style.transform = `translate(${x + 12}px, ${y + 12}px)`;
 			this.trackDragTransfer(this.canvas.vesselAtViewport(point.x, point.y), point, from);
+			preview.hidden = !!this.dragTransfer;
 		};
 		this.startPaletteDrag(event, {
 			start: () => {
@@ -2231,43 +2281,18 @@ export class ChemLab extends LitElementWw {
 			this.closeAmountMenu();
 			return;
 		}
-		let result: number;
-		if ("vessel" in from) {
-			const source = from.vessel;
-			if (!this.allChemComponents.includes(source)) {
-				this.closeAmountMenu();
-				return;
-			}
-			result = this.transferMeasuredVolume(source, target, amount);
-			if (result > 0) {
-				this.reportXApi("appended", `${source._type}:${source._id}`, {
-					response: anchor.label, success: true, completion: true,
-				});
-			}
-		} else {
-			// A palette drag clears the selection. The open menu owns the recipe for this dose.
-			result = this.addMeasuredDose(target, from.dose, amount, doseHint(from.recipe));
-			this.saveMeasuredDose(anchor, from.recipe, result);
+		if ("vessel" in from && !this.allChemComponents.includes(from.vessel)) {
+			this.closeAmountMenu();
+			return;
 		}
-		if (this.curr_obj === target || ("vessel" in from && this.curr_obj === from.vessel)) this._updatePopup();
+		const result = this.applyTransfer(menu, amount);
 		if (result > 0) {
+			this.finishMeasuredTransfer(menu, result);
 			this.dismissAmountMenu();
 		} else {
 			this.amountMenu = { ...menu, amount: 0, max: 0 };
 			void this.updateComplete.then(() => this.shadowRoot.querySelector<HTMLElement>("#amountMenu")?.focus({ preventScroll: true }));
 		}
-	}
-
-	private updateFillMeter(sprite: PIXI.Container, target: chemlib.ChemComponent): number {
-		const { minX, maxX, y, height } = sprite.getBounds();
-		const canvas = this.app.screen;
-		const volume = target._content.contentVolume * 1000;
-		this.fillMeter = {
-			x: Math.max(0, maxX + 92 <= canvas.width ? maxX + 6 : minX - 86),
-			y: Math.max(0, Math.min(canvas.height - 24, y + height / 2 - 12)),
-			volume, capacity: target._volume,
-		};
-		return volume;
 	}
 
 	beginChemicalDose(sprite: PIXI.Container, pointerId: number): boolean {
@@ -2279,7 +2304,7 @@ export class ChemLab extends LitElementWw {
 		const dose = this.buildDose(selected.recipe);
 		if (!dose) return true;
 
-		this.hideFillMeter();
+		this.hideTransferFeedback();
 		const controller = new AbortController();
 		const view = this.ownerDocument.defaultView;
 		const canvasView = this.app.canvas;
@@ -2296,29 +2321,40 @@ export class ChemLab extends LitElementWw {
 		let nextStatusMs = 500;
 		const task = "chemical-dose";
 		const stepMl = doseStepMl(selected.recipe);
-		const add = (requestedMl: number) => {
-			const hint = doseHint(selected.recipe);
-			totalMl += this.addMeasuredDose(target, dose, requestedMl, hint);
-			return target._volume - this.updateFillMeter(sprite, target) <= 1e-8;
+		const route: TransferRoute = { anchor: sprite, target, from: { name: selected.name, recipe: selected.recipe, dose } };
+		const add = (requestedMl: number, phase: "running" | "dose") => {
+			const added = this.applyTransfer(route, requestedMl);
+			totalMl += added;
+			const limit = this.transferReachedLimit(route, requestedMl, added);
+			this.transferFeedback = { ...route, amount: totalMl, phase: limit ? "limit" : phase, gesture: "press" };
+			return limit;
 		};
 		const finish = (click: boolean, save = true) => {
 			this.simulation.stopTask(task);
 			controller.abort();
 			if (canvasView.hasPointerCapture(pointerId)) canvasView.releasePointerCapture(pointerId);
 			this.stopDose = undefined;
-			if (click && !holding) add(stepMl);
-			if (click) this.meterTimeout = view.setTimeout(() => this.hideFillMeter(), 650);
-			else this.hideFillMeter();
+			if (click && !holding) add(stepMl, "dose");
+			if (click && !holding) this.meterTimeout = view.setTimeout(() => this.hideTransferFeedback(), 850);
+			else this.hideTransferFeedback();
 			if (save) this.saveMeasuredDose(sprite, selected.recipe, totalMl);
 			if (this.curr_obj === target) this._updatePopup();
 		};
+		let progress = 0;
 		this.simulation.startTask(task, (elapsedMs) => {
 			heldMs += elapsedMs;
-			if (heldMs < nextDoseMs) return;
+			if (heldMs < nextDoseMs) {
+				const next = Math.floor(heldMs / 50) * 50;
+				if (!holding && next !== progress) {
+					progress = next;
+					this.transferFeedback = { ...route, amount: 0, phase: "arming", gesture: "press", progress: next / 300 };
+				}
+				return;
+			}
 			holding = true;
 			const steps = 1 + Math.floor((heldMs - nextDoseMs) / 50);
 			nextDoseMs += steps * 50;
-			const full = add(steps * 0.4 * stepMl);
+			const full = add(steps * 0.4 * stepMl, "running");
 			if ((full || heldMs >= nextStatusMs) && this.curr_obj === target) {
 				this._updatePopup();
 				nextStatusMs = heldMs + 500;
@@ -2328,13 +2364,19 @@ export class ChemLab extends LitElementWw {
 		this.stopDose = (save = false) => finish(false, save);
 		const options = { capture: true, signal: controller.signal };
 		view.addEventListener("pointerup", (event) => {
-			if (event.pointerId === pointerId) finish(true);
+			if (event.pointerId === pointerId) finish(holding || this.canvas.vesselAtViewport(event.clientX, event.clientY) === sprite);
 		}, options);
-		view.addEventListener("pointercancel", (event) => {
+		view.addEventListener("pointermove", (event) => {
+			if (event.pointerId === pointerId &&
+				(!(event.buttons & 1) || this.canvas.vesselAtViewport(event.clientX, event.clientY) !== sprite)) finish(false);
+		}, options);
+		const cancel = (event: PointerEvent) => {
 			if (event.pointerId === pointerId) finish(false);
-		}, options);
-		view.addEventListener("blur", () => finish(false), options);
-		this.updateFillMeter(sprite, target);
+		};
+		view.addEventListener("pointercancel", cancel, options);
+		canvasView.addEventListener("lostpointercapture", cancel, options);
+		view.addEventListener("blur", () => finish(false), { signal: controller.signal });
+		this.transferFeedback = { ...route, amount: 0, phase: "arming", gesture: "press", progress: 0 };
 		return true;
 	}
 
@@ -2686,6 +2728,10 @@ export class ChemLab extends LitElementWw {
 		const menu = this.amountMenu;
 		if (menu && (removedChemical.includes(menu.target) ||
 			("vessel" in menu.from && removedChemical.includes(menu.from.vessel)))) this.closeAmountMenu();
+		if (this.transferFeedback && removedChemical.includes(this.transferFeedback.target)) {
+			this.stopDose?.();
+			this.hideTransferFeedback();
+		}
 		const removedMixtures = new Map(removedChemical.map((component) => [component._content, component]));
 		const detachedElectrodes = this.allEComponents.filter((component) => component._type === chemlib.EComponentType.Electrode &&
 			removedMixtures.has(component._connectedMix) && !labels.has(labelOf(component)));
@@ -2698,7 +2744,7 @@ export class ChemLab extends LitElementWw {
 		const selected = world.children[this.curr_stage_index];
 		if (selected && labels.has(selected.label)) {
 			this.stopDose?.();
-			this.hideFillMeter();
+			this.hideTransferFeedback();
 			this.clearObjectSelection();
 		}
 		// A lead that hangs on a removed device survives with a free end where
@@ -3224,7 +3270,6 @@ export class ChemLab extends LitElementWw {
 					${this.pix_canvas}
 					${this.renderObjectSummary()}
 					${this.renderGroupSummary()}
-					${this.renderFillMeter()}
 					${this.renderAmountMenu()}
 					${this.renderControlButtons()}
 					${this.renderBuilderExchange()}
@@ -4685,19 +4730,6 @@ export class ChemLab extends LitElementWw {
 			</div>`;
 	}
 
-	private renderFillMeter() {
-		const meter = this.fillMeter;
-		if (!meter) return nothing;
-		const volume = Math.max(0, Math.min(meter.capacity, meter.volume));
-		const label = `${volume.toFixed(1)} / ${meter.capacity} mL`;
-		return html`
-			<div class="fill-meter volume-bar" role="meter" aria-label=${this.message("Füllstand")}
-				aria-valuemin="0" aria-valuemax=${meter.capacity} aria-valuenow=${volume} aria-valuetext=${label}
-				style=${`left: ${meter.x}px; top: ${meter.y}px; --amount-progress: ${100 * volume / meter.capacity}%`}>
-				${label}
-			</div>`;
-	}
-
 	private renderCompactAction(label: string, icon: keyof typeof CONTROL_ICONS, action: () => void,
 		{ id, primary = false, disabled = false }: { id?: string; primary?: boolean; disabled?: boolean } = {}) {
 		return html`<sl-button size="small" class="compact-control-button" id=${id ?? nothing}
@@ -4709,23 +4741,28 @@ export class ChemLab extends LitElementWw {
 
 	private renderAmountMenu() {
 		const menu = this.amountMenu;
-		if (!menu) return nothing;
+		const feedback = this.transferFeedback;
+		const route = menu ?? feedback;
+		if (!route) return nothing;
 		const vesselName = (vessel: chemlib.ChemComponent) => `${this.itemName(vessel._type)} ${vessel._id + 1}`;
-		const from = "vessel" in menu.from ? vesselName(menu.from.vessel) : menu.from.name;
-		const target = vesselName(menu.target);
-		const transfer = "vessel" in menu.from;
-		const sliderStep = menu.max >= 1 ? 1 : menu.max >= 0.1 ? 0.1 : menu.max / 10;
+		const from = "vessel" in route.from ? vesselName(route.from.vessel) : route.from.name;
+		const transfer = "vessel" in route.from;
+		const title = this.message(transfer ? "Inhalt übertragen" : "Stoff hinzufügen");
+		const capacity = route.target._volume;
+		const volume = Math.max(0, Math.min(capacity, route.target._content.contentVolume * 1000));
+		const fillLabel = `${this.formatAmount(volume, 4)} / ${this.formatAmount(capacity, 5)} mL`;
 		const changeAmount = (value: number) => this.setAmount(value);
 		return html`
-			<section id="amountMenu" class="selection-info" tabindex="-1" contenteditable="false" aria-labelledby="amountMenuTitle"
+			<section id="amountMenu" class="selection-info" data-transfer-phase=${menu ? "manual" : feedback.phase}
+				tabindex=${menu ? -1 : nothing} contenteditable="false" aria-labelledby="amountMenuTitle"
 				@keydown=${this.handleAmountMenuKey}>
 				<div class="amount-menu-heading">
-					<strong id="amountMenuTitle">${this.message(transfer ? "Inhalt übertragen" : "Stoff hinzufügen")}</strong>
-					<sl-button-group class="amount-menu-actions" label=${this.message(transfer ? "Inhalt übertragen" : "Stoff hinzufügen")}>
+					<strong id="amountMenuTitle">${title}</strong>
+					${menu ? html`<sl-button-group class="amount-menu-actions" label=${title}>
 						${this.renderCompactAction(this.message(menu.max > 0 ? "Abbrechen" : "Schließen"), "cancel", this.dismissAmountMenu)}
 						${menu.max > 0 ? this.renderCompactAction(this.message(transfer ? "Übertragen" : "Hinzufügen"), "confirm",
 							this.confirmAmount.bind(this), { primary: true, disabled: menu.amount <= 0 }) : nothing}
-					</sl-button-group>
+					</sl-button-group>` : nothing}
 				</div>
 				<div class="amount-menu-route">
 					<sl-tag size="small" variant="neutral">${from}</sl-tag>
@@ -4734,17 +4771,43 @@ export class ChemLab extends LitElementWw {
 							<path d="M2.5 8h10m-4-4 4 4-4 4" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
 						</svg>
 					</span>
-					<sl-tag size="small" variant="primary">${target}</sl-tag>
+					<sl-tag size="small" variant="primary">${vesselName(route.target)}</sl-tag>
 				</div>
-				${menu.max > 0 ? renderValueControl({
+				<div class="transfer-meter" role="meter" aria-label=${this.message("Füllstand")} aria-valuemin="0"
+					aria-valuemax=${capacity} aria-valuenow=${volume} aria-valuetext=${fillLabel}
+					style=${`--transfer-progress: ${volume / capacity}`}>
+					<span class="transfer-progress-fill"></span><span>${fillLabel}</span>
+				</div>
+				${menu ? (menu.max > 0 ? renderValueControl({
 					label: this.message("Menge"), unit: "mL", value: menu.amount, min: 0, max: menu.max,
 					hint: `max. ${this.formatAmount(menu.max, 7)} mL`,
-					step: 0.1, rangeStep: sliderStep, locale: this.lang,
+					step: 0.1, rangeStep: menu.max >= 1 ? 1 : menu.max >= 0.1 ? 0.1 : menu.max / 10, locale: this.lang,
 					decreaseLabel: this.message("Menge verringern"), increaseLabel: this.message("Menge erhöhen"),
 					invalidLabel: this.message("Gib eine Zahl ein."),
 					onChange: changeAmount, onInput: changeAmount,
-				}) : html`<span role="status">${this.message("Keine Menge verfügbar.")}</span>`}
+				}) : html`<span class="transfer-caption" role="status">${this.message("Keine Menge verfügbar.")}</span>`)
+					: this.renderTransferFeedback(feedback)}
 			</section>`;
+	}
+
+	private renderTransferFeedback(feedback: TransferFeedback) {
+		if (feedback.phase === "arming") {
+			return html`<div class="transfer-caption">${feedback.gesture === "drop"
+				? this.builderText("Release to choose an amount. Hold to pour.", "Loslassen für Mengenwahl. Halten zum Füllen.")
+				: this.builderText("Release for one dose. Keep holding to fill.", "Loslassen für Einzeldosis. Halten zum Füllen.")}</div>
+				${feedback.progress === undefined ? nothing : html`<div class="transfer-hold-track" role="progressbar"
+					aria-label=${this.builderText("Time held over the vessel", "Wartezeit über dem Gefäß")}
+					aria-valuenow=${Math.round(feedback.progress * 100)} style=${`--transfer-progress: ${feedback.progress}`}>
+					<span class="transfer-progress-fill"></span>
+				</div>`}`;
+		}
+		const note = feedback.phase === "limit"
+			? this.builderText("Transfer limit reached", "Transfergrenze erreicht")
+			: feedback.phase === "running" ? this.builderText("Release to stop", "Loslassen zum Stoppen") : "";
+		return html`<div class="transfer-caption transfer-result">
+			<span>${note}</span>
+			${feedback.amount > 0 ? html`<strong>+${this.formatAmount(feedback.amount, 4)} mL</strong>` : nothing}
+		</div>`;
 	}
 
 	private renderGroupSummary() {
@@ -4774,10 +4837,11 @@ export class ChemLab extends LitElementWw {
 	}
 
 	positionAmountMenu(): void {
-		if (!this.amountMenu || !this.app) return;
+		const route = this.amountMenu ?? this.transferFeedback;
+		if (!route || !this.app) return;
 		const summary = this.shadowRoot.querySelector<HTMLElement>("#amountMenu");
 		const { width, height } = this.app.screen;
-		const anchor = this.amountMenu.anchor;
+		const anchor = route.anchor;
 		const bounds = anchor.parent && anchor.getBounds();
 		this.positionCanvasPanel(summary, bounds && bounds.maxX > 0 && bounds.maxY > 0 &&
 			bounds.minX < width && bounds.minY < height ? bounds : undefined, width, height);
@@ -4863,7 +4927,7 @@ export class ChemLab extends LitElementWw {
 		this.stopDose?.(true);
 		this.finishDragTransfer();
 		this.closeAmountMenu();
-		this.hideFillMeter();
+		this.hideTransferFeedback();
 		const previous = vessel._content;
 		vessel._content = chemlib.StructureManager.newMixture();
 		for (const device of this.allEComponents) {
