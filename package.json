@@ -525,6 +525,7 @@
             }
         },
         "./widgets/webwriter-chemlab-periodic-table": {
+            "content": "script?",
             "label": {
                 "_": "Periodic Table",
                 "en": "Periodic Table",

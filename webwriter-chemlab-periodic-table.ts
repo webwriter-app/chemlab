@@ -83,6 +83,20 @@ import {
 } from "./periodic-table/phase";
 import { periodicTableStyles } from "./periodic-table/styles";
 import {
+	DEFAULT_FILTERS,
+	filtersText,
+	readFilters,
+	type AuthoredFilters,
+} from "./periodic-table/authored-filters";
+import {
+	INTERFACE_LOCK_OPTIONS,
+	UNLOCKED_INTERFACE,
+	hidesRegion,
+	ribbonAvailable,
+	type InterfaceLockKey,
+	type InterfaceLocks,
+} from "./periodic-table/interface-locks";
+import {
 	format,
 	languageAncestors,
 	resolveLanguage,
@@ -322,6 +336,24 @@ function parseView(raw: string | null | undefined): PeriodicTableView {
 	return VIEWS.find(view => view === value) ?? "auto";
 }
 
+/**
+ * Escapes a JSON snapshot for the script slot.
+ *
+ * Some WebWriter versions collapse repeated spaces in script text, and a `<`
+ * would end the script early. The snapshot is compact JSON, so space runs and
+ * angle brackets only occur inside string values, where both escapes decode
+ * back to the same character.
+ *
+ * @param snapshot - Compact JSON of the data block.
+ * @returns Text safe to store as the script's content.
+ */
+function maskJsonText(snapshot: string): string {
+	return snapshot.replace(/</g, "\\u003c").replace(/ {2,}/g, spaces => "\\u0020".repeat(spaces.length));
+}
+
+/** Delay before a filter change reaches the document, in milliseconds. */
+const FILTERS_WRITE_DELAY = 400;
+
 /** Attribute converter for `initial-element`, so invalid markup means "no selection". */
 const atomicNumberConverter = {
 	fromAttribute: (value: string | null) => parseAtomicNumberAttribute(value),
@@ -373,10 +405,12 @@ export class ChemLabPeriodicTable extends LitElementWw {
 	static optionGroups = {
 		content: { label: { _: "Content", "de-DE": "Inhalt" }, collapsible: true, advanced: false },
 		appearance: { label: { _: "Appearance", "de-DE": "Darstellung" }, collapsible: true, advanced: false },
+		interface: { label: { _: "Learner interface", "de-DE": "Oberfläche für Lernende" }, collapsible: true, advanced: false },
 	};
 
 	static options = {
 		pauseShellElectrons: { ...pauseShellElectronsOption, group: "appearance" },
+		...INTERFACE_LOCK_OPTIONS,
 		initialElement: {
 			type: "number" as const,
 			group: "content",
@@ -440,6 +474,20 @@ export class ChemLabPeriodicTable extends LitElementWw {
 
 	@property({ type: Boolean, attribute: "pause-shell-electrons", reflect: true })
 	accessor pauseShellElectrons = false;
+
+	/*
+	 * Learner locks from the options menu, see `periodic-table/interface-locks.ts`.
+	 * Each one only takes effect outside the authoring view, so the teacher keeps
+	 * the whole table while editing.
+	 */
+	@property({ type: Boolean, reflect: true, attribute: "hide-filters" })
+	accessor hideFilters = false;
+	@property({ type: Boolean, reflect: true, attribute: "hide-modes" })
+	accessor hideModes = false;
+	@property({ type: Boolean, reflect: true, attribute: "hide-layout-switch" })
+	accessor hideLayoutSwitch = false;
+	@property({ type: Boolean, reflect: true, attribute: "hide-info" })
+	accessor hideInfo = false;
 
 	#startElementDrag(event: PointerEvent, atomicNumber: number) {
 		if (!this.pickerMode || !event.isPrimary || event.button !== 0) return;
@@ -509,6 +557,21 @@ export class ChemLabPeriodicTable extends LitElementWw {
 	 * leaves the panel closed when the pointer travelled.
 	 */
 	#dragOrigin: { x: number; y: number } | null = null;
+	/**
+	 * Watches the authored data slot and the host attributes.
+	 *
+	 * The editor may replace the script from outside, and WebWriter switches
+	 * between authoring and learning by changing `contenteditable`. Both change
+	 * what the widget may show, so both ask for a new render.
+	 */
+	#dataObserver: MutationObserver | null = null;
+	#worksheetObserver: MutationObserver | null = null;
+	/** Text of the data slot as it was last read or written, to skip own writes. */
+	#lastSaved = "";
+	/** Snapshot the open timer will write, compared with the slot before writing. */
+	#lastSnapshot = "";
+	/** Pending write of the authored filters, `null` when none is scheduled. */
+	#writeTimer: number | null = null;
 
 	/**
 	 * Currently selected atomic number, `null` when nothing is selected.
@@ -524,9 +587,53 @@ export class ChemLabPeriodicTable extends LitElementWw {
 		this.#selection.write(value);
 	}
 
-	/** Layout actually rendered: the learner's temporary choice wins over the author default. */
+	/**
+	 * Layout actually rendered.
+	 *
+	 * A learner's temporary choice wins over the authored default. With the
+	 * layout switch locked there is no way to choose one, so the authored layout
+	 * is the only one the learner sees.
+	 */
 	get effectiveView(): PeriodicTableView {
+		if (this.#hides("hideLayoutSwitch")) return this.view;
 		return this.#viewOverride ?? this.view;
+	}
+
+	/**
+	 * Whether the viewer edits the worksheet.
+	 *
+	 * WebWriter marks the authoring view with `contenteditable`. A watched
+	 * attribute change asks for a new render, so the locks follow the switch
+	 * between authoring and learning without a reload.
+	 */
+	get canAuthor(): boolean {
+		const editable = this.getAttribute("contenteditable");
+		return editable === "" || editable === "true";
+	}
+
+	/** Authored lock state of the learner interface. */
+	get #interfaceLocks(): InterfaceLocks {
+		return {
+			hideFilters: this.hideFilters,
+			hideModes: this.hideModes,
+			hideLayoutSwitch: this.hideLayoutSwitch,
+			hideInfo: this.hideInfo,
+		};
+	}
+
+	/**
+	 * Whether a region is taken away from this viewer.
+	 *
+	 * @param region - Region the widget asks about.
+	 * @returns `true` when the region must not be rendered.
+	 */
+	#hides(region: InterfaceLockKey): boolean {
+		return hidesRegion(region, this.#interfaceLocks, this.canAuthor);
+	}
+
+	/** Filters as the document stores them right now. */
+	get #filters(): AuthoredFilters {
+		return { query: this.#query, category: this.#category, mode: this.#mode };
 	}
 
 	/**
@@ -569,10 +676,12 @@ export class ChemLabPeriodicTable extends LitElementWw {
 		}
 	}
 
-	/** Follows the language of the enclosing content. */
+	/** Follows the language of the enclosing content and reads the stored filters. */
 	connectedCallback() {
 		super.connectedCallback();
 		this.#observeLanguage();
+		this.#restoreFilters();
+		this.#observeAuthoredState();
 		if (this.#atomPreview) this.#observeAtomPeers();
 	}
 
@@ -584,6 +693,12 @@ export class ChemLabPeriodicTable extends LitElementWw {
 		this.#languageObserver = null;
 		this.#atomPeersObserver?.disconnect();
 		this.#atomPeersObserver = null;
+		this.#dataObserver?.disconnect();
+		this.#dataObserver = null;
+		this.#worksheetObserver?.disconnect();
+		this.#worksheetObserver = null;
+		if (this.#writeTimer !== null) clearTimeout(this.#writeTimer);
+		this.#writeTimer = null;
 		super.disconnectedCallback();
 	}
 
@@ -632,6 +747,105 @@ export class ChemLabPeriodicTable extends LitElementWw {
 			observer.observe(candidate, { attributes: true, attributeFilter: ["lang"] });
 		}
 		this.#languageObserver = observer;
+	}
+
+	/**
+	 * Watches the authored data slot and the authoring attribute.
+	 *
+	 * The slot may be replaced from outside, for instance when the worksheet is
+	 * loaded or a second table of the same document writes its own block; the
+	 * own writes are skipped by their text. The host attributes change when
+	 * WebWriter switches between authoring and learning, which decides the
+	 * locks.
+	 */
+	#observeAuthoredState() {
+		if (typeof MutationObserver !== "function") return;
+		this.#dataObserver?.disconnect();
+		const observer = new MutationObserver(() => this.#restoreFilters());
+		observer.observe(this, { childList: true, characterData: true, subtree: true });
+		this.#dataObserver = observer;
+		this.#worksheetObserver?.disconnect();
+		const worksheet = new MutationObserver(() => this.requestUpdate());
+		worksheet.observe(this, { attributes: true, attributeFilter: ["class", "contenteditable"] });
+		this.#worksheetObserver = worksheet;
+	}
+
+	/**
+	 * The authored data slot of this widget.
+	 *
+	 * Only the direct child is the widget's own block; a nested slot belongs to
+	 * an embedded widget and stays untouched.
+	 */
+	#dataBlock(): HTMLScriptElement | null {
+		return this.querySelector<HTMLScriptElement>(':scope > script[type="application/json"][slot="data"]');
+	}
+
+	/**
+	 * Applies the filters of the document.
+	 *
+	 * The own text is skipped, so a render does not reset what the learner just
+	 * typed. Everything else is data: a block the model cannot read leaves the
+	 * table as it is, and a value outside its range is clamped instead of
+	 * emptying the table.
+	 */
+	#restoreFilters() {
+		const text = this.#dataBlock()?.textContent ?? "";
+		if (text === this.#lastSaved) return;
+		this.#lastSaved = text;
+		if (!text.trim()) return;
+		let parsed: unknown;
+		try {
+			parsed = JSON.parse(text);
+		} catch {
+			return;
+		}
+		const filters = readFilters(parsed);
+		if (filtersText(filters) === filtersText(this.#filters)) return;
+		this.#query = filters.query;
+		this.#category = filters.category;
+		this.#mode = filters.mode;
+		this.#lastSnapshot = maskJsonText(filtersText(filters));
+		this.requestUpdate();
+	}
+
+	/**
+	 * Collects a filter change and writes it once the learner pauses.
+	 *
+	 * Writing on every keystroke would replace the script node per character and
+	 * fill the editor's undo history with widget noise, so the write waits for a
+	 * short pause. A learner's browsing changes nothing: outside authoring the
+	 * document belongs to the worksheet.
+	 */
+	#schedulePersist() {
+		if (!this.canAuthor || !this.isConnected) return;
+		this.#lastSnapshot = maskJsonText(filtersText(this.#filters));
+		if (this.#writeTimer !== null) clearTimeout(this.#writeTimer);
+		this.#writeTimer = setTimeout(() => {
+			this.#writeTimer = null;
+			this.#persistFilters();
+		}, FILTERS_WRITE_DELAY) as unknown as number;
+	}
+
+	/** Writes the collected filters into the data slot. */
+	#persistFilters() {
+		if (!this.canAuthor || !this.isConnected) return;
+		const text = this.#lastSnapshot;
+		if (!text || text === this.#lastSaved) return;
+		const existing = this.#dataBlock();
+		if (existing && existing.textContent === text) {
+			this.#lastSaved = text;
+			return;
+		}
+		// A different revision makes WebWriter replace the script as a whole.
+		// Editing its text makes the editor treat JSON as document text.
+		const block = this.ownerDocument.createElement("script");
+		block.type = "application/json";
+		block.slot = "data";
+		block.dataset.chemlabRevision = String((Number(existing?.dataset.chemlabRevision) || 0) + 1);
+		block.textContent = text;
+		this.#lastSaved = text;
+		if (existing) existing.replaceWith(block);
+		else this.append(block);
 	}
 
 	/** Records the host width, which decides the automatic layout. */
@@ -936,6 +1150,7 @@ export class ChemLabPeriodicTable extends LitElementWw {
 	#toggleCategory(category: string) {
 		this.#category = this.#category === category ? null : category;
 		this.requestUpdate();
+		this.#schedulePersist();
 	}
 
 	/**
@@ -947,6 +1162,7 @@ export class ChemLabPeriodicTable extends LitElementWw {
 		if (this.#mode.mode === mode) return;
 		this.#mode = { ...this.#mode, mode };
 		this.requestUpdate();
+		this.#schedulePersist();
 	}
 
 	/** Reads the temperature slider, which works in degrees Celsius. */
@@ -955,6 +1171,7 @@ export class ChemLabPeriodicTable extends LitElementWw {
 		if (!Number.isFinite(value)) return;
 		this.#mode = { ...this.#mode, temperatureK: kelvinFromCelsius(value) };
 		this.requestUpdate();
+		this.#schedulePersist();
 	};
 
 	/** Reads the year slider. */
@@ -963,6 +1180,7 @@ export class ChemLabPeriodicTable extends LitElementWw {
 		if (!Number.isFinite(value)) return;
 		this.#mode = { ...this.#mode, year: value };
 		this.requestUpdate();
+		this.#schedulePersist();
 	};
 
 	/** Reads the atomic radius slider, which hides everything above the threshold. */
@@ -971,6 +1189,7 @@ export class ChemLabPeriodicTable extends LitElementWw {
 		if (!Number.isFinite(value)) return;
 		this.#mode = { ...this.#mode, radiusPm: value };
 		this.requestUpdate();
+		this.#schedulePersist();
 	};
 
 	/** Reads the electronegativity slider, which hides everything below the threshold. */
@@ -979,6 +1198,7 @@ export class ChemLabPeriodicTable extends LitElementWw {
 		if (!Number.isFinite(value)) return;
 		this.#mode = { ...this.#mode, electronegativity: value };
 		this.requestUpdate();
+		this.#schedulePersist();
 	};
 
 	/** Reads the ionization energy slider, which hides everything below the threshold. */
@@ -987,6 +1207,7 @@ export class ChemLabPeriodicTable extends LitElementWw {
 		if (!Number.isFinite(value)) return;
 		this.#mode = { ...this.#mode, ionizationEv: value };
 		this.requestUpdate();
+		this.#schedulePersist();
 	};
 
 	/** Reads the half-life slider, which works in decades of seconds. */
@@ -995,6 +1216,7 @@ export class ChemLabPeriodicTable extends LitElementWw {
 		if (!Number.isFinite(value)) return;
 		this.#mode = { ...this.#mode, halfLifeLogSeconds: value };
 		this.requestUpdate();
+		this.#schedulePersist();
 	};
 
 	/** Opens or closes the panel with the search field and the family filter. */
@@ -1054,6 +1276,7 @@ export class ChemLabPeriodicTable extends LitElementWw {
 		this.#viewOverride = null;
 		this.#clearFromUser();
 		this.requestUpdate();
+		this.#schedulePersist();
 	}
 
 	/**
@@ -1066,6 +1289,7 @@ export class ChemLabPeriodicTable extends LitElementWw {
 	#resetMode = () => {
 		this.#mode = DEFAULT_MODE_STATE;
 		this.requestUpdate();
+		this.#schedulePersist();
 	};
 
 	/** Reads the search field. */
@@ -1074,6 +1298,7 @@ export class ChemLabPeriodicTable extends LitElementWw {
 		if (value === this.#query) return;
 		this.#query = value;
 		this.requestUpdate();
+		this.#schedulePersist();
 	};
 
 	/** Selects the best match on Enter, so the field works without a mouse. */
@@ -1165,57 +1390,81 @@ export class ChemLabPeriodicTable extends LitElementWw {
 	 * @returns The ribbon.
 	 */
 	#renderRibbon(t: Strings, language: Language, resolved: ResolvedView, count: number) {
+		const hideFilters = this.#hides("hideFilters");
+		const hideModes = this.#hides("hideModes");
+		const hideLayoutSwitch = this.#hides("hideLayoutSwitch");
+		// With every group locked the bar would be an empty stripe above the
+		// table, so it makes way and the table takes its height.
+		if (!ribbonAvailable(hideFilters, hideModes, hideLayoutSwitch)) return nothing;
 		const filtersActive = this.#query !== "" || this.#category !== null;
 		const modesActive = this.#mode.mode !== "off";
-		const cutoutOpen = this.#filtersOpen || this.#modesOpen;
+		const filtersOpen = !hideFilters && this.#filtersOpen;
+		const modesOpen = !hideModes && this.#modesOpen;
+		const cutoutOpen = filtersOpen || modesOpen;
 		return html`
 			<div class="ribbon">
-				<sl-button-group label=${t.filtersLabel + " / " + t.modeLabel}>
-					<sl-button
-						class="ribbon-toggle ${this.#filtersOpen ? "is-open" : ""} ${filtersActive ? "is-active" : ""}"
-						size="small"
-						title=${t.filtersLabel}
-						aria-label=${t.filtersLabel}
-						aria-expanded=${this.#filtersOpen}
-						@click=${this.#toggleFilters}
-					>${FILTER_ICON}</sl-button>
-					<sl-button
-						class="ribbon-toggle ${this.#modesOpen ? "is-open" : ""} ${modesActive ? "is-active" : ""}"
-						size="small"
-						title=${t.modeLabel}
-						aria-label=${t.modeLabel}
-						aria-expanded=${this.#modesOpen}
-						@click=${this.#toggleModes}
-					>${MODE_ICON}</sl-button>
-				</sl-button-group>
+				${hideFilters && hideModes
+					? nothing
+					: html`
+						<sl-button-group label=${t.filtersLabel + " / " + t.modeLabel}>
+							${hideFilters
+								? nothing
+								: html`
+									<sl-button
+										class="ribbon-toggle ${this.#filtersOpen ? "is-open" : ""} ${filtersActive ? "is-active" : ""}"
+										size="small"
+										title=${t.filtersLabel}
+										aria-label=${t.filtersLabel}
+										aria-expanded=${this.#filtersOpen}
+										@click=${this.#toggleFilters}
+									>${FILTER_ICON}</sl-button>
+								`}
+							${hideModes
+								? nothing
+								: html`
+									<sl-button
+										class="ribbon-toggle ${this.#modesOpen ? "is-open" : ""} ${modesActive ? "is-active" : ""}"
+										size="small"
+										title=${t.modeLabel}
+										aria-label=${t.modeLabel}
+										aria-expanded=${this.#modesOpen}
+										@click=${this.#toggleModes}
+									>${MODE_ICON}</sl-button>
+								`}
+						</sl-button-group>
+					`}
 				<div class="ribbon-cutout">
 					${cutoutOpen
 						? html`
 							<div class="ribbon-lip">
-								${this.#renderFilters(t, language, count)}
-								${this.#renderModes(t, language)}
+								${filtersOpen ? this.#renderFilters(t, language, count) : null}
+								${modesOpen ? this.#renderModes(t, language) : null}
 							</div>
 						`
 						: null}
 				</div>
-				<sl-button-group class="views" label=${t.viewLabel}>
-					<sl-button
-						size="small"
-						variant=${resolved === "table" ? "primary" : "default"}
-						title=${t.viewTable}
-						aria-label=${t.viewTable}
-						aria-pressed=${resolved === "table"}
-						@click=${() => this.#setView("table")}
-					>${TABLE_ICON}</sl-button>
-					<sl-button
-						size="small"
-						variant=${resolved === "list" ? "primary" : "default"}
-						title=${t.viewList}
-						aria-label=${t.viewList}
-						aria-pressed=${resolved === "list"}
-						@click=${() => this.#setView("list")}
-					>${LIST_ICON}</sl-button>
-				</sl-button-group>
+				${hideLayoutSwitch
+					? nothing
+					: html`
+						<sl-button-group class="views" label=${t.viewLabel}>
+							<sl-button
+								size="small"
+								variant=${resolved === "table" ? "primary" : "default"}
+								title=${t.viewTable}
+								aria-label=${t.viewTable}
+								aria-pressed=${resolved === "table"}
+								@click=${() => this.#setView("table")}
+							>${TABLE_ICON}</sl-button>
+							<sl-button
+								size="small"
+								variant=${resolved === "list" ? "primary" : "default"}
+								title=${t.viewList}
+								aria-label=${t.viewList}
+								aria-pressed=${resolved === "list"}
+								@click=${() => this.#setView("list")}
+							>${LIST_ICON}</sl-button>
+						</sl-button-group>
+					`}
 			</div>
 		`;
 	}
@@ -2184,14 +2433,18 @@ export class ChemLabPeriodicTable extends LitElementWw {
 					: this.#renderGrid(t, language, matching, details)}
 				${this.pickerMode ? nothing : html`
 					${this.#renderPrintOverview(t, language, element)}
-					<sl-icon-button
-						class="info-button"
-						src=${INFO_ICON}
-						label=${t.infoLabel}
-						title=${t.infoLabel}
-						@click=${this.#openInfo}
-					></sl-icon-button>
-					${this.#renderInfo(t, language)}
+					${this.#hides("hideInfo")
+						? nothing
+						: html`
+							<sl-icon-button
+								class="info-button"
+								src=${INFO_ICON}
+								label=${t.infoLabel}
+								title=${t.infoLabel}
+								@click=${this.#openInfo}
+							></sl-icon-button>
+							${this.#renderInfo(t, language)}
+						`}
 				`}
 				${this.pickerMode ? this.#renderPickerInfo(t, language) : nothing}
 			</div>
