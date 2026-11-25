@@ -394,6 +394,16 @@ export const builderStyles = css`
 		box-shadow: var(--panel-shadow);
 		font-size: .78rem;
 	}
+	.model-summary-header {
+		display: flex;
+		align-items: flex-start;
+		gap: .4rem;
+	}
+	.model-summary-header > .fields { min-inline-size: 0; }
+	.model-display-controls {
+		flex: none;
+		margin-inline-start: auto;
+	}
 	.summary-formula { font-size: .88rem; font-weight: 650; overflow-wrap: anywhere; }
 	.summary-caption, .summary-variant > span { color: var(--sl-color-neutral-600, #52525b); }
 	.summary-variant {

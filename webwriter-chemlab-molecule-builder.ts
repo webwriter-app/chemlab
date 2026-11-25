@@ -3,6 +3,7 @@ import { html, nothing, svg } from "lit";
 import { customElement, property, state } from "lit/decorators.js";
 import SlBadge from "@shoelace-style/shoelace/dist/components/badge/badge.component.js";
 import SlButton from "@shoelace-style/shoelace/dist/components/button/button.component.js";
+import SlButtonGroup from "@shoelace-style/shoelace/dist/components/button-group/button-group.component.js";
 import SlDetails from "@shoelace-style/shoelace/dist/components/details/details.component.js";
 import SlIcon from "@shoelace-style/shoelace/dist/components/icon/icon.component.js";
 import SlInput from "@shoelace-style/shoelace/dist/components/input/input.component.js";
@@ -132,6 +133,13 @@ const AXES_ICON = svg`<svg width="16" height="16" viewBox="0 0 16 16" aria-hidde
 	<path d="M3.4 12.6V3.4M3.4 12.6h9.2M3.4 12.6 8.6 7.4" /><path d="M3.4 2.2v1.2M2.2 12.6h1.2M9.6 6.4 8.6 7.4 9.6 8.4" /></svg>`;
 const ELECTRONS_ICON = svg`<svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true" fill="currentColor" stroke="none">
 	<circle cx="4.4" cy="8" r="1.7" /><circle cx="11.6" cy="8" r="1.7" /></svg>`;
+const HYDRATION_ICON = svg`<svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true" fill="none"
+	stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round">
+	<path d="M8 1.6C6.8 3.8 3.5 6.8 3.5 9.7a4.5 4.5 0 0 0 9 0C12.5 6.8 9.2 3.8 8 1.6Z" />
+	<path d="M5.8 9.8a2.2 2.2 0 0 0 2.2 2.2" /></svg>`;
+const POLARITY_ICON = svg`<svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true" fill="none"
+	stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round">
+	<path d="M2 8h12m-3.5-3.5L14 8l-3.5 3.5M4 5.5v5" /></svg>`;
 
 @customElement(BUILDER_TAG)
 export class ChemLabMoleculeBuilder extends LitElementWw {
@@ -139,7 +147,7 @@ export class ChemLabMoleculeBuilder extends LitElementWw {
 	static scopedElements = {
 		"webwriter-chemlab-periodic-table": ChemLabPeriodicTable,
 		"chemlab-atomic-figure": AtomicFigure,
-		"sl-badge": SlBadge, "sl-button": SlButton, "sl-details": SlDetails, "sl-icon": SlIcon,
+		"sl-badge": SlBadge, "sl-button": SlButton, "sl-button-group": SlButtonGroup, "sl-details": SlDetails, "sl-icon": SlIcon,
 		"sl-input": SlInput, "sl-popup": SlPopup, "sl-spinner": SlSpinner, "sl-tag": SlTag,
 	};
 	static options = {
@@ -1438,7 +1446,10 @@ export class ChemLabMoleculeBuilder extends LitElementWw {
 		const options = this.catalogVariants.length > 1;
 		const displays = showDisplay && hasMolecularDisplays(current);
 		const molecular = displays ? this.molecularDisplay : "sticks";
+		const canShowHydration = Boolean(aqueous?.components.length);
+		const canShowElectrons = !crystal && showDisplay && molecular === "sticks";
 		const canShowPolarity = this.#canShowPolarity(current);
+		const showMoleculeControls = canShowHydration || canShowElectrons || canShowPolarity;
 		const lone = !crystal && current.atoms.length === 1 ? current.atoms[0] : undefined;
 		const composition = lone ? elementByAtomicNumber(lone.atomicNumber).names[this.#t("en", "de")]
 			: this.#atoms.length && (!crystal || this.view === "3d")
@@ -1449,13 +1460,27 @@ export class ChemLabMoleculeBuilder extends LitElementWw {
 		const toggle = (label: string, icon: unknown, value: boolean, onClick: () => void) => this.#iconButton({
 			label, icon, pressed: value, onClick,
 		});
-		return html`<div class="model-summary" ?hidden=${!(missing || composition || options || showDisplay || showOxidation || status)}>
-			${missing ? html`<strong class="summary-formula">${selectedEntry.name}</strong>` : nothing}
-			${composition && !missing && !options ? html`<div class="fields">
-				<strong class="summary-formula">${composition}</strong>
-				${!crystal && current.repeatUnit ? html`<span class="summary-caption">${this.view === "2d"
-					? this.#t("Repeating unit", "Wiederholungseinheit")
-					: this.#t("Polymer", "Polymer")}</span>` : nothing}
+		const showComposition = composition && !missing && !options;
+		return html`<div class="model-summary" ?hidden=${!(missing || composition || options || showDisplay || showOxidation || status || showMoleculeControls)}>
+			${missing || showComposition || showMoleculeControls ? html`<div class="model-summary-header">
+				${missing ? html`<strong class="summary-formula">${selectedEntry.name}</strong>` : nothing}
+				${showComposition ? html`<div class="fields">
+					<strong class="summary-formula">${composition}</strong>
+					${!crystal && current.repeatUnit ? html`<span class="summary-caption">${this.view === "2d"
+						? this.#t("Repeating unit", "Wiederholungseinheit")
+						: this.#t("Polymer", "Polymer")}</span>` : nothing}
+				</div>` : nothing}
+				${showMoleculeControls ? html`<sl-button-group class="model-display-controls" label=${this.#t("Molecule display", "Moleküldarstellung")}>
+					${canShowHydration ? toggle(this.#t("Hydration shells", "Hydrathüllen"), HYDRATION_ICON, this.showHydration, () => {
+						this.#setDisplay({ hydration: !this.showHydration });
+						this.diagramBox = undefined;
+						this.#fitNext = true;
+					}) : nothing}
+					${canShowElectrons ? toggle(this.#t("Valence electrons", "Valenzelektronen"), ELECTRONS_ICON, this.showElectrons,
+						() => this.#setDisplay({ electrons: !this.showElectrons })) : nothing}
+					${canShowPolarity ? toggle(this.#t("Electron density", "Elektronendichte"), POLARITY_ICON, this.showPolarity,
+						() => this.#setDisplay({ polarity: !this.showPolarity })) : nothing}
+				</sl-button-group>` : nothing}
 			</div>` : nothing}
 			${options ? html`<label class="summary-variant">
 				<span>${catalogIsMixture(this.catalogKey) ? this.#t("Constituent", "Bestandteil") : this.#t("Variant", "Variante")}</span>
@@ -1471,21 +1496,11 @@ export class ChemLabMoleculeBuilder extends LitElementWw {
 					</option>`)}
 				</select>
 			</label>` : nothing}
-			${aqueous && aqueous.components.length ? html`
+			${canShowHydration ? html`
 				<div class="fields" aria-label=${this.#t("Representative dissolved species", "Repräsentative gelöste Spezies")}>
 					${aqueous.components.map(component => html`<sl-tag size="small" variant=${component.charge ? "primary" : "neutral"}>
 						${component.label}
 					</sl-tag>`)}
-				</div>
-				<div class="fields">
-					<sl-button size="small" variant=${this.showHydration ? "primary" : "default"}
-						aria-pressed=${String(this.showHydration)} title=${this.#t(
-							"Schematic water orientation around dissolved ions", "Schematische Anordnung von Wasser um gelöste Ionen")}
-						@click=${() => {
-							this.#setDisplay({ hydration: !this.showHydration });
-							this.diagramBox = undefined;
-							this.#fitNext = true;
-						}}>${this.#t("Hydration shells", "Hydrathüllen")}</sl-button>
 				</div>
 				${this.showHydration ? html`<div class="hydration-key">
 					<span data-contact="hydrogen">${this.#t("Hydrogen bond", "Wasserstoffbrücke")}</span>
@@ -1511,7 +1526,7 @@ export class ChemLabMoleculeBuilder extends LitElementWw {
 			${molecular === "space-filling" ? html`<span class="summary-caption" title=${this.#t(
 				"Van der Waals radii draw the overlapping molecular envelope.", "Van-der-Waals-Radien bilden die überlappende Molekülhülle.")}>
 				${this.#t("Van der Waals radii", "Van-der-Waals-Radien")}</span>` : nothing}
-			${current.kind === "molecule" && molecular === "sticks" && this.showElectrons && this.view === "3d" ? html`
+			${canShowElectrons && this.showElectrons ? html`
 				<span class="structure-legend" title=${this.#t(
 					"Approximate Lewis and VSEPR regions. Dots represent electron counts in the displayed bonding model.",
 					"Angenäherte Lewis- und VSEPR-Bereiche. Punkte stehen für die Elektronenzahl im dargestellten Bindungsmodell.",
@@ -1525,8 +1540,8 @@ export class ChemLabMoleculeBuilder extends LitElementWw {
 					${this.#t("Oxidation state", "Oxidationszahl")}
 					<span data-oxidation="negative">−</span><span data-oxidation="neutral">0</span><span data-oxidation="positive">+</span>
 				</div>` : nothing}
-			${(showDisplay && (crystal || molecular === "sticks")) || canShowPolarity ? html`<div class="display-controls" role="group" aria-label=${this.#t("Display", "Darstellung")}>
-				${crystal ? html`<label>${this.#t("Cells", "Zellen")}
+			${crystal && showDisplay ? html`<div class="display-controls" role="group" aria-label=${this.#t("Display", "Darstellung")}>
+				<label>${this.#t("Cells", "Zellen")}
 					<select .value=${String(this.repeats)} @change=${(event: Event) => {
 						this.repeats = Number((event.currentTarget as HTMLSelectElement).value);
 						this.#fitNext = true;
@@ -1534,17 +1549,10 @@ export class ChemLabMoleculeBuilder extends LitElementWw {
 					}}>
 						${[1, 2, 3].filter(value => value ** 3 * current.sites.length <= 1800)
 							.map(value => html`<option value=${value} ?selected=${value === this.repeats}>${value} × ${value} × ${value}</option>`)}
-					</select></label>` : nothing}
-				${crystal ? toggle(this.#t("Cell edges", "Zellkanten"), EDGES_ICON, this.showEdges, () => { this.showEdges = !this.showEdges; }) : nothing}
-				${crystal ? toggle(this.#t("Lattice points", "Gitterpunkte"), LATTICE_ICON, this.showLattice, () => { this.showLattice = !this.showLattice; }) : nothing}
-				${crystal ? toggle(this.#t("Axes", "Achsen"), AXES_ICON, this.showAxes, () => { this.showAxes = !this.showAxes; }) : nothing}
-				${current.kind === "molecule" && current.atoms.length && molecular === "sticks" && this.view === "3d" && this.gpu === "ready"
-					? toggle(this.#t("Valence electrons", "Valenzelektronen"), ELECTRONS_ICON, this.showElectrons, () => { this.#setDisplay({ electrons: !this.showElectrons }); })
-					: nothing}
-				${canShowPolarity ? html`<sl-button class="polarity-toggle" size="small"
-					variant=${this.showPolarity ? "primary" : "default"} aria-pressed=${String(this.showPolarity)}
-					@click=${() => this.#setDisplay({ polarity: !this.showPolarity })}>
-					${this.#t("Electron density", "Elektronendichte")}</sl-button>` : nothing}
+					</select></label>
+				${toggle(this.#t("Cell edges", "Zellkanten"), EDGES_ICON, this.showEdges, () => { this.showEdges = !this.showEdges; })}
+				${toggle(this.#t("Lattice points", "Gitterpunkte"), LATTICE_ICON, this.showLattice, () => { this.showLattice = !this.showLattice; })}
+				${toggle(this.#t("Axes", "Achsen"), AXES_ICON, this.showAxes, () => { this.showAxes = !this.showAxes; })}
 			</div>` : nothing}
 			${canShowPolarity && this.showPolarity ? html`<div class="fields" title=${this.#t(
 				"A larger electronegativity difference gives a stronger colour contrast. Grey bonds have equal or unavailable values.",
