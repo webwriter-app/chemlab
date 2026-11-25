@@ -42,6 +42,15 @@ export interface EvolvedGas {
 	 * term find the dissolved amount behind a term such as `[Cl2]`.
 	 */
 	smiles?: string;
+	/**
+	 * Whether the gas enters the water as a fully dissociated acid instead of
+	 * a neutral solute. Hydrogen chloride is the case: its pKa of −6 leaves
+	 * almost nothing undissociated, so the neutral fraction of its family is
+	 * not the amount that dissolves. {@link solubility} then bounds the stored
+	 * analytical acid, and only that — a chloride that came in with a salt is
+	 * a spectator and cannot be driven out as HCl gas.
+	 */
+	dissociated?: boolean;
 	/** Molar mass in g/mol, for the amount a condensed phase is shown in. */
 	molarMass?: number;
 	/** Density in g/mL of the condensed phase, for the volume it takes up. */
@@ -110,6 +119,10 @@ export const evolvedGases: Readonly<Record<string, EvolvedGas>> = {
 	H2S: { formula: "H₂S", phase: "gas", family: "S", solubility: 0.1 },
 	// NH3: about 15 mol/L in the concentrated solution, so a lab solution stays
 	NH3: { formula: "NH₃", phase: "gas", family: "N", solubility: 15 },
+	// HCl: 12.1 mol/L, the value of the 37 % saturated hydrochloric acid the
+	// lab keeps as a stock. Dissolved it is fully dissociated, so the bound
+	// holds the stored acid and not its (vanishing) neutral share.
+	HCl: { formula: "HCl", phase: "gas", family: "Cl", solubility: 12.1, dissociated: true },
 	// H2: 0.78 mmol/L, practically insoluble, and only formed on a metal surface
 	H2: { formula: "H₂", phase: "gas", solubility: 7.8e-4, smiles: "[H][H]" },
 	// O2: 1.3 mmol/L, the value that makes a water electrolysis bubble at all

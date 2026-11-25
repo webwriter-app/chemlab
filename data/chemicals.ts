@@ -644,6 +644,12 @@ export const chemicalCatalog: CatalogChemical[] = [
 		carbonDioxide, [{ molecule: carbonicAcid, amount: 1 }]),
 	gasReagent("Chlor", "Nichtmetalle und Gase", "Cl2", "Cl₂", 70.906,
 		covalent("Cl₂", ["chlorine", "chlorine"], [[0, 1]], [0, 0])),
+	// Hydrogen chloride enters the water as the acid itself, so the dose books
+	// the stored acid and the gas evolution only takes back what exceeds the
+	// 12.1 mol/L saturation of the concentrated acid. The Henry row is what
+	// makes a bubbled portion dissolve as H⁺ and Cl⁻ from the first step.
+	gasReagent("Chlorwasserstoff", "Nichtmetalle und Gase", "HCl", "HCl", 36.46, hcl,
+		[{ molecule: hcl, amount: 1 }]),
 	sodiumChloride,
 	salt("Kaliumchlorid", "KCl", "potassium", "chlorine"),
 	salt("Natriumbromid", "NaBr", "sodium", "bromine"),

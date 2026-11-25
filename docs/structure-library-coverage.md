@@ -12,12 +12,12 @@ Reference-only behaviour is an interim gap, not an exemption.
 
 | Measure | Count |
 | --- | ---: |
-| Catalog entries | 181 |
-| Entries with a builder structure | 170 |
+| Catalog entries | 182 |
+| Entries with a builder structure | 171 |
 | Entries without a builder structure | 11 |
-| Dosed entries (solid or aqueous) | 177 |
+| Dosed entries (solid or aqueous) | 178 |
 | Dosed salt entries | 62 |
-| Molecular reagents outside the salt pairing | 115 |
+| Molecular reagents outside the salt pairing | 116 |
 | Mixtures shown by their constituents | 19 |
 | Salt entries in total | 62 |
 | Salt identities | 31 |

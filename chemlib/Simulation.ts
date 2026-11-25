@@ -3536,6 +3536,12 @@ export abstract class Simulation {
 	 * concentration passes the saturation value at room temperature. The
 	 * escaped amount is kept on the mixture so the vessel can show the gas.
 	 *
+	 * A gas that dissolves dissociated bounds the stored acid instead of the
+	 * neutral share of its family: hydrogen chloride has a pKa of −6, so
+	 * almost nothing of it is undissociated and a neutral-share limit would
+	 * never let it escape. The stored acid is what a dose brings in, and a
+	 * chloride from a dissolved salt stays behind as a spectator.
+	 *
 	 * @private
 	 * @static
 	 * @param {Mixture} mix - the solution to degas
@@ -3553,20 +3559,48 @@ export abstract class Simulation {
 			const entry = Object.entries(evolvedGases)
 				.find(([, gas]) => gas.family === family.key);
 			if (!entry) continue;
-			const [id, { solubility }] = entry;
+			const [id, { solubility, dissociated }] = entry;
 			if (!(solubility > 0)) continue;
-			// the neutral dissolved form is the one that leaves the solution
+			// the neutral dissolved form is the one that leaves the solution,
+			// unless the gas dissolves as an acid of its own
 			const neutral = family.protonatedCharge;
-			if (neutral < 0 || neutral > family.pKa.length) continue;
-			const excess = family.totalC * AcidBase.speciesFractions(family, H)[neutral] - solubility;
+			if (!dissociated && (neutral < 0 || neutral > family.pKa.length)) continue;
+			const stock = dissociated ? this.acidStock(mix, family) : family.totalC * volume;
+			const dissolved = dissociated
+				? stock / volume
+				: family.totalC * AcidBase.speciesFractions(family, H)[neutral];
+			const excess = dissolved - solubility;
 			if (!(excess > 1e-9)) continue;
-			const amount = Math.min(excess * volume, family.totalC * volume);
+			const amount = Math.min(excess * volume, stock);
 			if (!(amount > 1e-12)) continue;
 			this.changeFamily(mix, family, -amount);
 			mix.evolveGas(id, amount);
 			changed = true;
 		}
 		return changed;
+	}
+
+	/**
+	 * Stored analytical acid of a family, in mol.
+	 *
+	 * The member at the protonated charge is the acid itself; a stored
+	 * conjugate ion belongs to the same family but entered as a salt, and only
+	 * the acid can leave as gas. A family keeps its members that the vessel
+	 * holds, so the sum is the dosed amount less whatever already escaped.
+	 *
+	 * @private
+	 * @static
+	 * @param {Mixture} mix - the solution holding the acid
+	 * @param {AcidBaseFamily} family - the family to measure
+	 * @returns {number} amount of the protonated form in mol
+	 */
+	private static acidStock(mix: Mixture, family: AcidBaseFamily): number {
+		let amount = 0;
+		for (const member of family.members) {
+			if (member._totalCharge !== family.protonatedCharge) continue;
+			amount += mix._molProperties[member._id + "n"] ?? 0;
+		}
+		return amount;
 	}
 
 	/**
