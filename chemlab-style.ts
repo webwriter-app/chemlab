@@ -1652,6 +1652,7 @@ export const style = css`
 	.diagram-trim-handle::after {
 		content: "";
 		position: absolute;
+		pointer-events: none;
 		width: calc(2 * var(--diagram-thumb-radius));
 		height: calc(2 * var(--diagram-thumb-radius));
 		border-radius: 50%;
@@ -1661,42 +1662,42 @@ export const style = css`
 		background: var(--sl-color-primary-500);
 	}
 	.diagram-trim-track-x .diagram-trim-handle {
-		width: 10px;
+		width: 20px;
 		cursor: ew-resize;
 	}
 	.diagram-trim-track-x .diagram-trim-handle::after {
 		top: calc(50% - var(--diagram-thumb-radius));
 	}
 	.diagram-trim-track-x .diagram-trim-min {
-		right: calc(100% - var(--trim-min));
+		right: calc(100% - var(--trim-min) - var(--diagram-thumb-radius));
 	}
 	.diagram-trim-track-x .diagram-trim-min::after {
-		right: calc(-1 * var(--diagram-thumb-radius));
+		right: 0;
 	}
 	.diagram-trim-track-x .diagram-trim-max {
-		left: var(--trim-max);
+		left: calc(var(--trim-max) - var(--diagram-thumb-radius));
 	}
 	.diagram-trim-track-x .diagram-trim-max::after {
-		left: calc(-1 * var(--diagram-thumb-radius));
+		left: 0;
 	}
 	.diagram-trim-track-y .diagram-trim-handle {
-		height: 10px;
+		height: 20px;
 		cursor: ns-resize;
 	}
 	.diagram-trim-track-y .diagram-trim-handle::after {
 		left: calc(50% - var(--diagram-thumb-radius));
 	}
 	.diagram-trim-track-y .diagram-trim-min {
-		top: calc(100% - var(--trim-min));
+		top: calc(100% - var(--trim-min) - var(--diagram-thumb-radius));
 	}
 	.diagram-trim-track-y .diagram-trim-min::after {
-		top: calc(-1 * var(--diagram-thumb-radius));
+		top: 0;
 	}
 	.diagram-trim-track-y .diagram-trim-max {
-		bottom: var(--trim-max);
+		bottom: calc(var(--trim-max) - var(--diagram-thumb-radius));
 	}
 	.diagram-trim-track-y .diagram-trim-max::after {
-		bottom: -8px;
+		bottom: 0;
 	}
 
 	.diagram-trim-handle:focus-visible {
