@@ -13,8 +13,7 @@
  * writing readable bundles with inline source maps for development.
  *
  * Usage: `node scripts/minify-widgets.mjs` after a release build in the
- * repository root. The `esbuild` it imports ships as a dependency of the
- * declared `vite` dev dependency.
+ * repository root. The minifier uses the package’s `esbuild` development dependency.
  *
  * Pass `--keep-names` to retain function and class names for `.name` lookups in
  * diagnostics. That costs about 30 kB gzip on the lab entry.

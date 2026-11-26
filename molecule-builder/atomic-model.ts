@@ -1,3 +1,4 @@
+import { localizedLabel } from "../localization/localization";
 import { css, html, nothing, svg } from "lit";
 import { isotopeText } from "../periodic-table/phase";
 import { atomicShells, mutedShellColor, orbitalOccupation, orbitalOrientations, shellColors, shellOrbit, subshellColors, visibleAtomicSubshells,
@@ -8,11 +9,11 @@ import { nucleonColors, schematicNucleons, type referenceNucleus } from "./atomi
 export type AtomicModel = "bohr" | "orbitals";
 export type AtomChoices = { model: AtomicModel; shell?: number; subshell?: string; showCore?: boolean };
 export const initialAtomChoices = (model: AtomicModel = "bohr"): AtomChoices => ({ model });
-type Translate = (en: string, de: string) => string;
+type Translate = (en: string, de: string, values?: Record<string, string | number>) => string;
 
 export const pauseShellElectronsOption = {
 	type: "boolean" as const, attribute: "pause-shell-electrons",
-	label: { _: "Pause electron motion in the shell model", "de-DE": "Elektronenbewegung im Schalenmodell anhalten" },
+	label: localizedLabel("Pause electron motion in the shell model", "Elektronenbewegung im Schalenmodell anhalten"),
 };
 
 const superscript = (value: number) => String(value).replace(/\d/g, digit => "⁰¹²³⁴⁵⁶⁷⁸⁹"[Number(digit)]);
@@ -28,8 +29,8 @@ export function renderNucleusLabel(nucleus: ReturnType<typeof referenceNucleus>,
 	if (!nucleus) return nothing;
 	const { massNumber, protons, neutrons, abundant } = nucleus;
 	const isotope = isotopeText(massNumber, symbol);
-	const label = t(`${isotope} · ${protons} protons · ${neutrons} neutrons`,
-		`${isotope} · ${protons} Protonen · ${neutrons} Neutronen`);
+	const label = t("{isotope} · {protons} protons · {neutrons} neutrons",
+		"{isotope} · {protons} Protonen · {neutrons} Neutronen", { isotope, protons, neutrons });
 	const context = abundant ? t("Most abundant isotope", "Häufigstes Isotop")
 		: t("Longest-lived isotope", "Langlebigstes Isotop");
 	return html`<span class="nucleus" role="img" aria-label=${label} title=${`${context} · ${label}`}>

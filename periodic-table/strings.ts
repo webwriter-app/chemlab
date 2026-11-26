@@ -1,20 +1,17 @@
 /**
  * Interface strings and language resolution of the periodic table.
  *
- * The table ships English and German. It resolves the nearest explicit `lang`
- * on itself or on the enclosing content, crossing shadow hosts, and falls back
- * to English for every other language. The lab widget's own helper defaults to
- * German and reads the lab message bundle, so the table keeps its own strings
- * instead of inheriting that behaviour.
+ * The table resolves the nearest explicit `lang` on itself or the surrounding
+ * content, crossing shadow hosts. The inline English and German strings provide
+ * the source text for the shared catalog.
  *
  * @module periodic-table/strings
  */
 
-/** Interface language of the table. */
-export type Language = "en" | "de";
+import { catalogLanguage, translatePair } from "../localization/localization";
 
-/** Languages the table ships, in fallback order. */
-export const LANGUAGES: readonly Language[] = ["en", "de"];
+/** Interface language of the table. */
+export type Language = string;
 
 /** Every interface string the table renders. */
 export type StringKey =
@@ -334,30 +331,17 @@ const DE: Strings = {
 	printTitle: "Periodensystem",
 };
 
-const STRINGS: Readonly<Record<Language, Strings>> = { en: EN, de: DE };
+const stringsByLanguage = new Map<Language, Strings>([["en", EN], ["de", DE]]);
 
-/**
- * Maps a language tag to a shipped language.
- *
- * Regional tags such as `de-AT` or `en-GB` map to their base language; every
- * other tag falls back to English.
- *
- * @param tag - Language tag from markup or a host.
- * @returns The shipped language.
- */
-export function languageFromTag(tag: string | null | undefined): Language {
-	const base = (tag ?? "").trim().toLowerCase().split(/[-_]/)[0];
-	return base === "de" ? "de" : "en";
-}
-
-/**
- * Returns the strings of a language.
- *
- * @param language - Shipped language.
- * @returns The string table.
- */
+/** Returns the strings of the requested language, using English as the fallback. */
 export function strings(language: Language): Strings {
-	return STRINGS[language];
+	const cached = stringsByLanguage.get(language);
+	if (cached) return cached;
+	const localized = Object.fromEntries((Object.keys(EN) as StringKey[]).map(key =>
+		[key, translatePair(EN[key], DE[key], language)],
+	)) as Strings;
+	stringsByLanguage.set(language, localized);
+	return localized;
 }
 
 /**
@@ -418,7 +402,7 @@ function parentOf(node: LanguageNode): LanguageNode | null {
 export function resolveLanguage(node: LanguageNode | null | undefined): Language {
 	for (let current = node ?? null; current; current = parentOf(current)) {
 		const tag = langOf(current);
-		if (tag !== null && tag.trim() !== "") return languageFromTag(tag);
+		if (tag !== null && tag.trim() !== "") return catalogLanguage(tag);
 	}
 	return "en";
 }

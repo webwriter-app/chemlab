@@ -4,7 +4,7 @@ Implement the [MVP product plan](periodic-table-mvp.md) in the ChemLab checkout.
 
 ## 1. Entry point and WebWriter verification
 
-Start by reading the repository [AGENTS.md](../AGENTS.md). Use the existing root npm package and dependency versions. The `dev` script currently launches Vite. Use `npm ci` and `npx @webwriter/build dev` in the repository root for the actual widget workflow. The product check takes place through WebWriter's local package import.
+Start by reading the repository [AGENTS.md](../AGENTS.md). Run `npm ci` and `npm run dev` in the repository root to build and watch the widgets. The product check takes place through WebWriter's local package import.
 
 Reserve `webwriter-chemlab-periodic-table` for the tag, source entry and built export. The published `@webwriter/chemdraw` package already uses `webwriter-periodic-table`. Include Chemdraw in the local WebWriter smoke test and verify that both tables can be inserted into the same worksheet with independent behavior, including after reopening it. [Chemdraw package API](https://www.npmjs.com/package/@webwriter/chemdraw)
 

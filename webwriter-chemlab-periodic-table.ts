@@ -1,3 +1,4 @@
+import { localizedLabel, translatePair } from "./localization/localization";
 /**
  * Standalone periodic table widget for WebWriter.
  *
@@ -9,7 +10,7 @@
  * @packageDocumentation
  */
 
-import { LitElementWw, action } from "@webwriter/lit";
+import { LitElementWw } from "@webwriter/lit";
 import { property } from "lit/decorators.js";
 import { html, nothing, svg, type PropertyValues } from "lit";
 
@@ -35,6 +36,7 @@ import {
 	CATEGORIES,
 	categoryOf,
 	elementByAtomicNumber,
+	elementName,
 	type ElementReference,
 } from "./periodic-table/element-reference";
 import { DETAIL_SLOT, GRID, type GridCell } from "./periodic-table/layout";
@@ -333,8 +335,13 @@ const viewConverter = {
 	toAttribute: (value: PeriodicTableView) => value,
 };
 
+function seriesLabel(key: string, language: Language) {
+	const category = CATEGORIES[key];
+	return category ? translatePair(category.en, category.de, language) : key;
+}
+
 /**
- * Bilingual periodic table with a live element selection.
+ * Localized periodic table with a live element selection.
  *
  * @fires chemlab:element-selection - After a user action that changed the selection.
  */
@@ -369,8 +376,8 @@ export class ChemLabPeriodicTable extends LitElementWw {
 	};
 
 	static optionGroups = {
-		content: { label: { _: "Content", "de-DE": "Inhalt" }, collapsible: true, advanced: false },
-		appearance: { label: { _: "Appearance", "de-DE": "Darstellung" }, collapsible: true, advanced: false },
+		content: { label: localizedLabel("Content", "Inhalt"), collapsible: true, advanced: false },
+		appearance: { label: localizedLabel("Appearance", "Darstellung"), collapsible: true, advanced: false },
 	};
 
 	static options = {
@@ -379,11 +386,11 @@ export class ChemLabPeriodicTable extends LitElementWw {
 			type: "number" as const,
 			group: "content",
 			attribute: "initial-element",
-			label: { _: "Initial element (atomic number)", "de-DE": "Startelement (Ordnungszahl)" },
-			description: {
-				_: "Atomic number from 1 to 118. Leave empty for no initial selection.",
-				"de-DE": "Ordnungszahl von 1 bis 118. Leer lassen für keine Vorauswahl.",
-			},
+			label: localizedLabel("Initial element (atomic number)", "Startelement (Ordnungszahl)"),
+			description: localizedLabel(
+				"Atomic number from 1 to 118. Leave empty for no initial selection.",
+				"Ordnungszahl von 1 bis 118. Leer lassen für keine Vorauswahl.",
+			),
 			min: 1,
 			max: 118,
 			step: 1,
@@ -391,17 +398,18 @@ export class ChemLabPeriodicTable extends LitElementWw {
 		view: {
 			type: "select" as const,
 			group: "appearance",
-			label: { _: "Layout", "de-DE": "Darstellung" },
+			label: localizedLabel("Layout", "Darstellung"),
 			options: [
-				{ value: "auto", label: { _: "Automatic", "de-DE": "Automatisch" } },
-				{ value: "table", label: { _: "Table", "de-DE": "Tabelle" } },
-				{ value: "list", label: { _: "List", "de-DE": "Liste" } },
+				{ value: "auto", label: localizedLabel("Automatic", "Automatisch") },
+				{ value: "table", label: localizedLabel("Table", "Tabelle") },
+				{ value: "list", label: localizedLabel("List", "Liste") },
 			],
 		},
 	};
 
-	options = ChemLabPeriodicTable.options;
-	optionGroups = ChemLabPeriodicTable.optionGroups;
+	static actions = {
+		clearInitialElement: { label: { _: "Clear initial element", de: "Startelement entfernen" } },
+	};
 
 	/**
 	 * Registers the live selection as a reactive property without an attribute.
@@ -533,7 +541,6 @@ export class ChemLabPeriodicTable extends LitElementWw {
 	 * The native number option cannot always be cleared in the editor, so authors
 	 * get an explicit action for it.
 	 */
-	@action({ label: { _: "Clear initial element", "de-DE": "Startelement entfernen" } })
 	clearInitialElement() {
 		this.initialElement = null;
 	}
@@ -723,7 +730,7 @@ export class ChemLabPeriodicTable extends LitElementWw {
 	 * @returns The matching elements in display order.
 	 */
 	#matches(): readonly SearchResult[] {
-		return searchElements(this.#query, { locale: this.#language, category: this.#category });
+		return searchElements(this.#query, { locale: this.#language.split("-")[0] === "de" ? "de" : "en", category: this.#category });
 	}
 
 	/**
@@ -1287,7 +1294,7 @@ export class ChemLabPeriodicTable extends LitElementWw {
 										aria-pressed=${this.#category === key}
 										@click=${() => this.#toggleCategory(key)}
 									>
-										<span class="family-swatch"></span>${category[language]}
+										<span class="family-swatch"></span>${translatePair(category.en, category.de, language)}
 									</button>
 								</sl-carousel-item>
 							`)}
@@ -1522,7 +1529,7 @@ export class ChemLabPeriodicTable extends LitElementWw {
 		if (faded) classes.push("is-faded");
 		const label = format(t.cellLabel, {
 			number: element.atomicNumber,
-			name: element.names[language],
+			name: elementName(element, language),
 			symbol: element.symbol,
 			category: categoryText(element, language),
 		}) + (note === null ? "" : ` · ${note}`);
@@ -1544,7 +1551,7 @@ export class ChemLabPeriodicTable extends LitElementWw {
 			>
 				<span class="cell-number">${cell.atomicNumber}</span>
 				<span class="cell-symbol">${element.symbol}</span>
-				<span class="cell-name">${element.names[language]}</span>
+				<span class="cell-name">${elementName(element, language)}</span>
 				${mode.badge === null ? null : html`<span class="cell-year">${mode.badge}</span>`}
 			</div>
 		`;
@@ -1619,7 +1626,7 @@ export class ChemLabPeriodicTable extends LitElementWw {
 			.filter(row => row.section === "series")
 			.map(row => {
 				const series = GRID.seriesRows.find(entry => entry.row === row.row);
-				const name = series ? CATEGORIES[series.category]?.[language] ?? series.category : "";
+				const name = series ? seriesLabel(series.category, language) : "";
 				const faded = series && fadedCategory(series.category) ? " is-faded" : "";
 				return html`
 					<div class="grid-row" role="row">
@@ -1697,7 +1704,7 @@ export class ChemLabPeriodicTable extends LitElementWw {
 					>
 						<span class="list-number">${entry.atomicNumber}</span>
 						<span class="list-symbol" @pointerdown=${(event: PointerEvent) => this.#startElementDrag(event, entry.atomicNumber)}>${entry.symbol}</span>
-						<span class="list-name">${entry.names[language]}</span>
+						<span class="list-name">${elementName(entry, language)}</span>
 						${this.pickerMode ? nothing : html`<span class="list-category">${categoryText(entry, language)}</span>`}
 						${mode.state === null
 							? mode.badge === null
@@ -1768,7 +1775,7 @@ export class ChemLabPeriodicTable extends LitElementWw {
 			<div
 				class="print-series"
 				style="--pt-row:${series.row + 2};--pt-column:1 / span 3"
-			>${CATEGORIES[series.category]?.[language] ?? series.category}</div>
+			>${seriesLabel(series.category, language)}</div>
 		`);
 		const rows = element ? detailRows(element, language, this.#temperature) : [];
 		return html`
@@ -1785,7 +1792,7 @@ export class ChemLabPeriodicTable extends LitElementWw {
 				<div class="print-details">
 					${element
 						? html`
-							<h3>${element.symbol} · ${element.names[language]}</h3>
+							<h3>${element.symbol} · ${elementName(element, language)}</h3>
 							<dl class="print-fields">
 								${rows.map(row => html`
 									<div>
@@ -1833,7 +1840,7 @@ export class ChemLabPeriodicTable extends LitElementWw {
 	#renderAtomPreview(element: ElementReference, language: Language) {
 		const choices = this.#atomChoices;
 		const configuration = electronConfiguration(element.atomicNumber, 0);
-		const t = (en: string, de: string) => language === "de" ? de : en;
+		const t = (en: string, de: string, values?: Record<string, string | number>) => translatePair(en, de, language, values);
 		const change = (next: typeof choices) => {
 			this.#atomChoices = next;
 			this.requestUpdate();
@@ -1884,13 +1891,13 @@ export class ChemLabPeriodicTable extends LitElementWw {
 		}
 		const atomView = options.atomPreview && this.#atomPreview;
 		const openBuilder = atomView && this.#atomBuilder();
-		const viewText = atomView ? (language === "de" ? "Elementinformationen" : "Element information")
-			: (language === "de" ? "Atommodelle" : "Atom models");
-		const builderText = language === "de" ? "Im Molekülbaukasten öffnen" : "Open in Molecule Builder";
+		const viewText = atomView ? (translatePair("Element information", "Elementinformationen", language))
+			: (translatePair("Atom models", "Atommodelle", language));
+		const builderText = translatePair("Open in Molecule Builder", "Im Molekülbaukasten öffnen", language);
 		const rows = atomView ? [] : detailRows(element, language, this.#temperature);
 		const key = keyRows(rows, this.#mode.mode);
 		const rest = rows.filter(row => !key.includes(row));
-		const name = element.names[language];
+		const name = elementName(element, language);
 		const expanded = options.expanded;
 		const open = !atomView && options.collapsible && expanded;
 		return html`
@@ -1977,7 +1984,7 @@ export class ChemLabPeriodicTable extends LitElementWw {
 		const lift = -Math.round(box.height);
 		return html`
 			<sl-popup class="picker-info" placement="bottom-start" distance=${lift} .anchor=${anchor} .active=${true}>
-				<div class="picker-info-surface" role="dialog" aria-label=${element.names[language]}
+				<div class="picker-info-surface" role="dialog" aria-label=${elementName(element, language)}
 					style="--picker-info-max-height:${Math.max(0, Math.round(box.height))}px">
 					${this.#renderDetails(t, language, element, {
 						expanded: true,

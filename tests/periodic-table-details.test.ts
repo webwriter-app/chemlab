@@ -19,13 +19,23 @@ import {
 	weightText,
 } from "../periodic-table/details";
 import { TABLE_MODES, type TableMode } from "../periodic-table/phase";
-import { strings } from "../periodic-table/strings";
+import { format, resolveLanguage, strings } from "../periodic-table/strings";
 
 const element = (atomicNumber: number) => {
 	const found = elementByAtomicNumber(atomicNumber);
 	assert.ok(found, `missing Z = ${atomicNumber}`);
 	return found;
 };
+
+test("the table uses the document language and fills translated placeholders", () => {
+	const parentElement = { getAttribute: () => "fr-CA" };
+	const host = { getAttribute: () => null, parentElement };
+	const language = resolveLanguage(host);
+	assert.equal(language, "fr");
+	assert.equal(strings(language).filtersLabel, "Rechercher et filtrer");
+	assert.equal(format(strings(language).groupLabel, { group: 3 }), "Groupe 3");
+	assert.equal(resolveLanguage({ getAttribute: () => "xx-ZZ" }), "en");
+});
 
 test("the detail card lists reference fields, including the metal lattice, in a fixed order", () => {
 	const rows = detailRows(element(26), "en");

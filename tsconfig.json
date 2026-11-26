@@ -6,7 +6,6 @@
     "module": "ESNext",
     "lib": ["ES2020", "DOM", "DOM.Iterable"],
     "skipLibCheck": true,
-    "baseUrl": "./",
 
     /* Bundler mode */
     "moduleResolution": "Bundler",
@@ -18,7 +17,7 @@
     "noEmit": true,
 
     /* Linting */
-    // "strict": true,
+    "strict": false,
     // "noUnusedLocals": true,
     // "noUnusedParameters": true,
     // "noFallthroughCasesInSwitch": true
