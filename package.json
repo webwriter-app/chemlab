@@ -1,6 +1,6 @@
 {
   "name": "@webwriter/chemlab",
-  "version": "2.1.0",
+  "version": "2.1.1",
   "description": "Build molecules, explore the periodic table, and simulate chemistry experiments.",
   "keywords": [
     "webwriter-widget",
@@ -164,6 +164,7 @@
     "./snippets/Beispiel-Periodensystem.html": "./snippets/Beispiel-Periodensystem.html",
     "./icon": "./icon.svg",
     "./preview": "./assets/preview.mp4",
+    "./preview/de": "./assets/preview-de.mp4",
     "./custom-elements.json": "./custom-elements.json"
   },
   "editingConfig": {
