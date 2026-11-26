@@ -118,6 +118,7 @@
   ],
   "license": "MIT",
   "author": "Robin Kreft",
+  "contributors": ["Frederic Salmen"],
   "main": "./dist/widgets/webwriter-chemlab.js",
   "scripts": {
     "dev": "build dev",
