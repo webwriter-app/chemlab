@@ -166,8 +166,5 @@ export async function sendXApiStatement(
 		},
 		body: JSON.stringify(statement),
 	})
-		.then((response) => {
-			/*console.log(response)*/
-		})
 		.catch((error) => console.error(error.message));
 }

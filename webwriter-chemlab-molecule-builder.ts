@@ -12,10 +12,10 @@ import SlTag from "@shoelace-style/shoelace/dist/components/tag/tag.component.js
 import { ChemLabPeriodicTable, type PickerInfoAnchor } from "./webwriter-chemlab-periodic-table";
 import { elementByAtomicNumber } from "./periodic-table/element-reference";
 import { metalCrystal } from "./periodic-table/metal-reference";
-import { ELEMENT_SELECTION_EVENT, isAtomicNumber, type ElementSelectionV1 } from "./periodic-table/selection";
+import { isAtomicNumber, type ElementSelectionV1 } from "./periodic-table/selection";
 import { SelectionRouter } from "./periodic-table/routing";
 import { catalogAqueousStructure, catalogEntry, catalogIsMixture, catalogStructures, structureCatalog } from "./molecule-builder/catalog";
-import { BUILDER_TAG, LAB_TAG, TABLE_TAG, worksheetPeers, worksheetScope, type LabReceiver } from "./molecule-builder/exchange";
+import { LAB_TAG, TABLE_TAG, worksheetPeers, worksheetScope, type LabReceiver } from "./molecule-builder/exchange";
 import { colorHex, crystalIonColors, crystalRadii, siteIon } from "./molecule-builder/crystal-display";
 import { add, fitGeometry, canBond, shapeName, formula, subtract } from "./molecule-builder/geometry";
 import { bondKind, canAssociateIons, ionicCharges, type BondMode } from "./molecule-builder/bond-types";

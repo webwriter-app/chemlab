@@ -86,7 +86,6 @@ function signatureOf(fragments: readonly UnitFragment[], water: number): string 
 export function formulaUnit(atoms: readonly Atom[], bonds: readonly Bond[]): FormulaUnit {
 	const molecule: Molecule = { version: 1, kind: "molecule", name: "", atoms: [...atoms], bonds: [...bonds] };
 	const charges = ionicCharges(molecule);
-	const byId = new Map(atoms.map(atom => [atom.id, atom]));
 	const links = new Map(atoms.map(atom => [atom.id, [] as number[]]));
 	for (const bond of bonds) if (isCovalentBond(bond)) {
 		links.get(bond.from)?.push(bond.to);

@@ -142,24 +142,6 @@
             },
             {
               "kind": "field",
-              "name": "xAPICheck",
-              "type": {
-                "text": "SlCheckbox"
-              },
-              "privacy": "private",
-              "description": "part of options, toggles xAPI statements"
-            },
-            {
-              "kind": "field",
-              "name": "xAPIKeyInput",
-              "type": {
-                "text": "SlInput"
-              },
-              "privacy": "private",
-              "description": "xAPI API key input"
-            },
-            {
-              "kind": "field",
               "name": "canvasArea",
               "type": {
                 "text": "HTMLDivElement"

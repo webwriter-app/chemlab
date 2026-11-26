@@ -120,7 +120,7 @@
   "author": "Robin Kreft",
   "main": "./dist/widgets/webwriter-chemlab.js",
   "scripts": {
-    "dev": "vite",
+    "dev": "build dev",
     "build": "build && node scripts/minify-widgets.mjs",
     "prepublishOnly": "npm run build"
   },
@@ -136,11 +136,9 @@
     "unique-names-generator": "^4.7.1"
   },
   "devDependencies": {
-    "@webcomponents/scoped-custom-element-registry": "^0.0.11",
     "@webwriter/build": "^1.15.0",
     "esbuild": "^0.28.2",
-    "typescript": "^7.0.2",
-    "vite": "^8.4.0"
+    "typescript": "^7.0.2"
   },
   "type": "module",
   "exports": {
