@@ -23,7 +23,7 @@ function localeMessage(source: string, language: string) {
 
 export function translate(source: string, language: string) {
     return localeMessage(source, language)
-        ?? (!language || /^de(?:-|$)/i.test(language) ? source : messages.get("en")?.[source] ?? source);
+        ?? (/^de(?:-|$)/i.test(language) ? source : messages.get("en")?.[source] ?? source);
 }
 
 function interpolate(text: string, values: Record<string, string | number>) {
@@ -51,9 +51,10 @@ function parent(node: Node) {
 
 export function effectiveLanguage(host: HTMLElement) {
     for (let node: Node | null = host; node; node = parent(node)) {
-        if (node instanceof HTMLElement && node.hasAttribute("lang")) return node.getAttribute("lang")!;
+        const language = node instanceof HTMLElement ? node.getAttribute("lang") : null;
+        if (language !== null) return language.trim() || "en";
     }
-    return "de";
+    return "en";
 }
 
 export function localize(host: ReactiveControllerHost & HTMLElement, onChange: () => void) {
