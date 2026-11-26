@@ -8,12 +8,40 @@ const messages = new Map(
 
 const localeDefaults = new Map([["no", "nb"], ["pt", "pt-pt"], ["zh", "zh-hans"]]);
 
-function translate(source: string, language: string) {
+export function catalogLanguage(language: string) {
+    const tag = language.trim().toLowerCase().replace(/_/g, "-");
+    const base = tag.split("-")[0];
+    return messages.has(tag) ? tag : messages.has(base) ? base : "en";
+}
+
+function localeMessage(source: string, language: string) {
     const tag = language.trim().toLowerCase();
     const base = tag.split("-")[0];
     const fallback = localeDefaults.get(base) ?? base;
-    return messages.get(tag)?.[source] ?? messages.get(base)?.[source] ?? messages.get(fallback)?.[source]
-        ?? (base === "de" || !base ? source : messages.get("en")?.[source] ?? source);
+    return messages.get(tag)?.[source] ?? messages.get(base)?.[source] ?? messages.get(fallback)?.[source];
+}
+
+export function translate(source: string, language: string) {
+    return localeMessage(source, language)
+        ?? (!language || /^de(?:-|$)/i.test(language) ? source : messages.get("en")?.[source] ?? source);
+}
+
+function interpolate(text: string, values: Record<string, string | number>) {
+    return text.replace(/\{(\w+)\}/g, (match, key) =>
+        Object.prototype.hasOwnProperty.call(values, key) ? String(values[key]) : match);
+}
+
+export function translatePair(english: string, german: string, language: string, values: Record<string, string | number> = {}) {
+    const text = localeMessage(`ui:${english}`, language)
+        ?? (/^de(?:-|$)/i.test(language) ? german : english);
+    return interpolate(text, values);
+}
+
+export function localizedLabel(english: string, german: string) {
+    return {
+        _: english,
+        ...Object.fromEntries(Object.keys(translations).map(tag => [tag, translatePair(english, german, tag)])),
+    };
 }
 
 function parent(node: Node) {
@@ -45,10 +73,8 @@ export function localize(host: ReactiveControllerHost & HTMLElement, onChange: (
             observer.disconnect();
         },
     });
-    return (source: string, values: Record<string, string | number> = {}) => {
-        const text = translate(source, effectiveLanguage(host));
-        return text.replace(/\{(\w+)\}/g, (match, key) => Object.prototype.hasOwnProperty.call(values, key) ? String(values[key]) : match);
-    };
+    return (source: string, values: Record<string, string | number> = {}) =>
+        interpolate(translate(source, effectiveLanguage(host)), values);
 }
 
 type Label = { _: string; en?: string; "de-DE"?: string };

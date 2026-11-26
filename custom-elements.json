@@ -4617,7 +4617,7 @@
         },
         {
           "kind": "class",
-          "description": "Bilingual periodic table with a live element selection.",
+          "description": "Localized periodic table with a live element selection.",
           "name": "ChemLabPeriodicTable",
           "members": [
             {
@@ -4637,7 +4637,7 @@
                 "text": "object"
               },
               "static": true,
-              "default": "{ content: { label: { _: \"Content\", \"de-DE\": \"Inhalt\" }, collapsible: true, advanced: false }, appearance: { label: { _: \"Appearance\", \"de-DE\": \"Darstellung\" }, collapsible: true, advanced: false }, }"
+              "default": "{ content: { label: localizedLabel(\"Content\", \"Inhalt\"), collapsible: true, advanced: false }, appearance: { label: localizedLabel(\"Appearance\", \"Darstellung\"), collapsible: true, advanced: false }, }"
             },
             {
               "kind": "field",
@@ -4646,7 +4646,7 @@
                 "text": "object"
               },
               "static": true,
-              "default": "{ pauseShellElectrons: { ...pauseShellElectronsOption, group: \"appearance\" }, initialElement: { type: \"number\" as const, group: \"content\", attribute: \"initial-element\", label: { _: \"Initial element (atomic number)\", \"de-DE\": \"Startelement (Ordnungszahl)\" }, description: { _: \"Atomic number from 1 to 118. Leave empty for no initial selection.\", \"de-DE\": \"Ordnungszahl von 1 bis 118. Leer lassen für keine Vorauswahl.\", }, min: 1, max: 118, step: 1, }, view: { type: \"select\" as const, group: \"appearance\", label: { _: \"Layout\", \"de-DE\": \"Darstellung\" }, options: [ { value: \"auto\", label: { _: \"Automatic\", \"de-DE\": \"Automatisch\" } }, { value: \"table\", label: { _: \"Table\", \"de-DE\": \"Tabelle\" } }, { value: \"list\", label: { _: \"List\", \"de-DE\": \"Liste\" } }, ], }, }"
+              "default": "{ pauseShellElectrons: { ...pauseShellElectronsOption, group: \"appearance\" }, initialElement: { type: \"number\" as const, group: \"content\", attribute: \"initial-element\", label: localizedLabel(\"Initial element (atomic number)\", \"Startelement (Ordnungszahl)\"), description: localizedLabel( \"Atomic number from 1 to 118. Leave empty for no initial selection.\", \"Ordnungszahl von 1 bis 118. Leer lassen für keine Vorauswahl.\", ), min: 1, max: 118, step: 1, }, view: { type: \"select\" as const, group: \"appearance\", label: localizedLabel(\"Layout\", \"Darstellung\"), options: [ { value: \"auto\", label: localizedLabel(\"Automatic\", \"Automatisch\") }, { value: \"table\", label: localizedLabel(\"Table\", \"Tabelle\") }, { value: \"list\", label: localizedLabel(\"List\", \"Liste\") }, ], }, }"
             },
             {
               "kind": "field",
@@ -6048,7 +6048,7 @@
                 "text": "object"
               },
               "static": true,
-              "default": "{ pauseShellElectrons: pauseShellElectronsOption, elementSourceId: { type: \"string\" as const, attribute: \"element-source-id\", label: { _: \"Linked periodic table ID\", \"de-DE\": \"ID des verknüpften Periodensystems\" }, }, labId: { type: \"string\" as const, attribute: \"lab-id\", label: { _: \"Linked ChemLab ID\", \"de-DE\": \"ID des verknüpften ChemLab\" }, }, }"
+              "default": "{ pauseShellElectrons: pauseShellElectronsOption, elementSourceId: { type: \"string\" as const, attribute: \"element-source-id\", label: localizedLabel(\"Linked periodic table ID\", \"ID des verknüpften Periodensystems\"), }, labId: { type: \"string\" as const, attribute: \"lab-id\", label: localizedLabel(\"Linked ChemLab ID\", \"ID des verknüpften ChemLab\"), }, }"
             },
             {
               "kind": "field",
@@ -6658,6 +6658,13 @@
                   "name": "de",
                   "type": {
                     "text": "string"
+                  }
+                },
+                {
+                  "name": "values",
+                  "optional": true,
+                  "type": {
+                    "text": "Record<string, string | number>"
                   }
                 }
               ]

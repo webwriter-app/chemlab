@@ -117,7 +117,7 @@ npm install @webwriter/chemlab
 
 
 ## `ChemLabPeriodicTable` (`<webwriter-chemlab-periodic-table>`)
-Bilingual periodic table with a live element selection.
+Localized periodic table with a live element selection.
 
 ### Usage
 
@@ -144,8 +144,8 @@ npm install @webwriter/chemlab
 | Name (Attribute Name) | Type | Description | Default | Reflects |
 | :-------------------: | :--: | :---------: | :-----: | :------: |
 | `ChemLabPeriodicTable.scopedElements` | `object` | Shoelace components used inside the shadow root.<br><br>`LitElementWw` renders through a scoped custom element registry, so a tag<br>that is missing here stays an unknown element: the toolbar would show the<br>bare text of its buttons and options instead of the controls. The entries<br>also keep the component modules in the bundle, because the imports are<br>otherwise unused and get tree-shaken away. The list includes the elements<br>the components use in their own templates, because a scoped registry does<br>not inherit them from the global one. | `{ "chemlab-atomic-figure": AtomicFigure, "sl-badge": SlBadge, "sl-button": SlButton, "sl-card": SlCard, "sl-carousel": SlCarousel, "sl-carousel-item": SlCarouselItem, "sl-dialog": SlDialog, "sl-divider": SlDivider, "sl-icon": SlIcon, "sl-icon-button": SlIconButton, "sl-input": SlInput, "sl-popup": SlPopup, "sl-spinner": SlSpinner, "sl-tag": SlTag, "sl-tooltip": SlTooltip, }` | ✗ |
-| `ChemLabPeriodicTable.optionGroups` | `object` | - | `{ content: { label: { _: "Content", "de-DE": "Inhalt" }, collapsible: true, advanced: false }, appearance: { label: { _: "Appearance", "de-DE": "Darstellung" }, collapsible: true, advanced: false }, }` | ✗ |
-| `ChemLabPeriodicTable.options` | `object` | - | `{ pauseShellElectrons: { ...pauseShellElectronsOption, group: "appearance" }, initialElement: { type: "number" as const, group: "content", attribute: "initial-element", label: { _: "Initial element (atomic number)", "de-DE": "Startelement (Ordnungszahl)" }, description: { _: "Atomic number from 1 to 118. Leave empty for no initial selection.", "de-DE": "Ordnungszahl von 1 bis 118. Leer lassen für keine Vorauswahl.", }, min: 1, max: 118, step: 1, }, view: { type: "select" as const, group: "appearance", label: { _: "Layout", "de-DE": "Darstellung" }, options: [ { value: "auto", label: { _: "Automatic", "de-DE": "Automatisch" } }, { value: "table", label: { _: "Table", "de-DE": "Tabelle" } }, { value: "list", label: { _: "List", "de-DE": "Liste" } }, ], }, }` | ✗ |
+| `ChemLabPeriodicTable.optionGroups` | `object` | - | `{ content: { label: localizedLabel("Content", "Inhalt"), collapsible: true, advanced: false }, appearance: { label: localizedLabel("Appearance", "Darstellung"), collapsible: true, advanced: false }, }` | ✗ |
+| `ChemLabPeriodicTable.options` | `object` | - | `{ pauseShellElectrons: { ...pauseShellElectronsOption, group: "appearance" }, initialElement: { type: "number" as const, group: "content", attribute: "initial-element", label: localizedLabel("Initial element (atomic number)", "Startelement (Ordnungszahl)"), description: localizedLabel( "Atomic number from 1 to 118. Leave empty for no initial selection.", "Ordnungszahl von 1 bis 118. Leer lassen für keine Vorauswahl.", ), min: 1, max: 118, step: 1, }, view: { type: "select" as const, group: "appearance", label: localizedLabel("Layout", "Darstellung"), options: [ { value: "auto", label: localizedLabel("Automatic", "Automatisch") }, { value: "table", label: localizedLabel("Table", "Tabelle") }, { value: "list", label: localizedLabel("List", "Liste") }, ], }, }` | ✗ |
 | `ChemLabPeriodicTable.actions` | `object` | - | `{ clearInitialElement: { label: { _: "Clear initial element", de: "Startelement entfernen" } }, }` | ✗ |
 | `initialElement` (`initial-element`) | `number \| null` | Authored default element, `null` for no initial selection. | `null` | ✓ |
 | `view` (`view`) | `PeriodicTableView` | Authored layout choice; invalid markup falls back to `auto`. | `"auto"` | ✓ |
@@ -212,7 +212,7 @@ npm install @webwriter/chemlab
 | Name (Attribute Name) | Type | Description | Default | Reflects |
 | :-------------------: | :--: | :---------: | :-----: | :------: |
 | `ChemLabMoleculeBuilder.scopedElements` | `object` | - | `{ "webwriter-chemlab-periodic-table": ChemLabPeriodicTable, "chemlab-atomic-figure": AtomicFigure, "sl-badge": SlBadge, "sl-button": SlButton, "sl-details": SlDetails, "sl-icon": SlIcon, "sl-input": SlInput, "sl-popup": SlPopup, "sl-spinner": SlSpinner, "sl-tag": SlTag, }` | ✗ |
-| `ChemLabMoleculeBuilder.options` | `object` | - | `{ pauseShellElectrons: pauseShellElectronsOption, elementSourceId: { type: "string" as const, attribute: "element-source-id", label: { _: "Linked periodic table ID", "de-DE": "ID des verknüpften Periodensystems" }, }, labId: { type: "string" as const, attribute: "lab-id", label: { _: "Linked ChemLab ID", "de-DE": "ID des verknüpften ChemLab" }, }, }` | ✗ |
+| `ChemLabMoleculeBuilder.options` | `object` | - | `{ pauseShellElectrons: pauseShellElectronsOption, elementSourceId: { type: "string" as const, attribute: "element-source-id", label: localizedLabel("Linked periodic table ID", "ID des verknüpften Periodensystems"), }, labId: { type: "string" as const, attribute: "lab-id", label: localizedLabel("Linked ChemLab ID", "ID des verknüpften ChemLab"), }, }` | ✗ |
 | `elementSourceId` (`element-source-id`) | `string` | - | `""` | ✓ |
 | `labId` (`lab-id`) | `string` | - | `""` | ✓ |
 | `pauseShellElectrons` (`pause-shell-electrons`) | `boolean` | - | `false` | ✓ |

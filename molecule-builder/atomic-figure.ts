@@ -1,3 +1,4 @@
+import { translatePair } from "../localization/localization";
 import { LitElement, css, html, type PropertyValues } from "lit";
 import { property, state } from "lit/decorators.js";
 import { atomicDrawingStyles, atomicOrbitalLabel, initialAtomChoices, renderAtomicShells, renderNucleusLabel, renderOrbitalFallback,
@@ -36,7 +37,7 @@ export class AtomicFigure extends LitElement {
 	#visibility?: IntersectionObserver;
 	#visible = true;
 	#pointers = new Map<number, { x: number; y: number }>();
-	#t = (en: string, de: string) => this.lang.startsWith("de") ? de : en;
+	#t = (en: string, de: string, values?: Record<string, string | number>) => translatePair(en, de, this.lang, values);
 
 	override connectedCallback() {
 		super.connectedCallback();

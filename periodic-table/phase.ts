@@ -74,8 +74,7 @@ export function celsiusText(kelvin: number, language: Language): string {
  * @returns The number as text.
  */
 function localizeNumber(value: number, language: Language): string {
-	const text = String(value);
-	return language === "de" ? text.replace(".", ",") : text;
+	return new Intl.NumberFormat(language, { useGrouping: false, maximumFractionDigits: 20 }).format(value);
 }
 
 /**

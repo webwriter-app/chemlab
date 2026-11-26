@@ -1,3 +1,4 @@
+import { translatePair } from "../localization/localization";
 /**
  * Detail card content of the periodic table.
  *
@@ -124,8 +125,7 @@ export function conditionsText(
  * @returns The number as text, for example `54,36`.
  */
 export function numberText(value: number, language: Language): string {
-	const text = String(Number(value.toFixed(2)));
-	return language === "de" ? text.replace(".", ",") : text;
+	return new Intl.NumberFormat(language, { useGrouping: false, maximumFractionDigits: 2 }).format(value);
 }
 
 /**
@@ -215,7 +215,7 @@ export function weightText(element: ElementReference, language: Language): strin
 		case "value":
 			return text.text;
 		case "interval":
-			return language === "de" ? `[${text.lower}; ${text.upper}]` : `[${text.lower}, ${text.upper}]`;
+			return `[${text.lower}${new Intl.NumberFormat(language).format(1.1).includes(",") ? ";" : ","} ${text.upper}]`;
 		case "none":
 			return strings(language).weightNone;
 		case "unavailable":
@@ -254,7 +254,9 @@ export function groupText(element: ElementReference, language: Language): string
  */
 export function categoryText(element: ElementReference, language: Language): string {
 	const category = categoryOf(element.atomicNumber);
-	return category ? CATEGORIES[category]?.[language] ?? category : "";
+	if (!category) return "";
+	const label = CATEGORIES[category];
+	return label ? translatePair(label.en, label.de, language) : category;
 }
 
 /**

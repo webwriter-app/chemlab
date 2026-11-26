@@ -1,3 +1,4 @@
+import { catalogLanguage, localizedLabel, translate, translatePair } from "./localization/localization";
 import { LitElementWw } from "@webwriter/lit";
 import { html, nothing, svg } from "lit";
 import { customElement, property, state } from "lit/decorators.js";
@@ -10,7 +11,7 @@ import SlPopup from "@shoelace-style/shoelace/dist/components/popup/popup.compon
 import SlSpinner from "@shoelace-style/shoelace/dist/components/spinner/spinner.component.js";
 import SlTag from "@shoelace-style/shoelace/dist/components/tag/tag.component.js";
 import { ChemLabPeriodicTable, type PickerInfoAnchor } from "./webwriter-chemlab-periodic-table";
-import { elementByAtomicNumber } from "./periodic-table/element-reference";
+import { elementByAtomicNumber, elementName } from "./periodic-table/element-reference";
 import { metalCrystal } from "./periodic-table/metal-reference";
 import { isAtomicNumber, type ElementSelectionV1 } from "./periodic-table/selection";
 import { SelectionRouter } from "./periodic-table/routing";
@@ -140,11 +141,11 @@ export class ChemLabMoleculeBuilder extends LitElementWw {
 		pauseShellElectrons: pauseShellElectronsOption,
 		elementSourceId: {
 			type: "string" as const, attribute: "element-source-id",
-			label: { _: "Linked periodic table ID", "de-DE": "ID des verknüpften Periodensystems" },
+			label: localizedLabel("Linked periodic table ID", "ID des verknüpften Periodensystems"),
 		},
 		labId: {
 			type: "string" as const, attribute: "lab-id",
-			label: { _: "Linked ChemLab ID", "de-DE": "ID des verknüpften ChemLab" },
+			label: localizedLabel("Linked ChemLab ID", "ID des verknüpften ChemLab"),
 		},
 	};
 	@property({ type: String, attribute: "element-source-id", reflect: true }) accessor elementSourceId = "";
@@ -274,7 +275,7 @@ export class ChemLabMoleculeBuilder extends LitElementWw {
 			?? this.renderRoot.querySelector<HTMLElement>(".board"))?.focus());
 	}
 
-	#t(en: string, de: string) { return this.lang?.toLowerCase().startsWith("de") ? de : en; }
+	#t(en: string, de: string, values?: Record<string, string | number>) { return translatePair(en, de, this.lang, values); }
 
 	override connectedCallback() {
 		super.connectedCallback();
@@ -398,7 +399,7 @@ export class ChemLabMoleculeBuilder extends LitElementWw {
 		if (!cell) return;
 		const size = `${cell.pixels.toFixed(3)}px`;
 		if (board.style.getPropertyValue("--grid-cell") !== size) board.style.setProperty("--grid-cell", size);
-		const length = cell.length.toLocaleString(this.lang?.startsWith("de") ? "de" : "en", { maximumSignificantDigits: 4 });
+		const length = cell.length.toLocaleString(catalogLanguage(this.lang), { maximumSignificantDigits: 4 });
 		const label = atomic || this.view === "3d" ? `${length} Å` : `${length} ${this.#t("du", "ZE")}`;
 		if (scale.textContent !== label) scale.textContent = label;
 		scale.parentElement.title = atomic || this.view === "3d"
@@ -1118,7 +1119,9 @@ export class ChemLabMoleculeBuilder extends LitElementWw {
 	#renderCatalog() {
 		if (this.openPanel !== "catalog") return nothing;
 		const query = this.catalogQuery.trim().toLowerCase();
+		const name = (source: string) => translate(source, this.lang || "en");
 		const matches = (entry: (typeof structureCatalog)[number]) => !query
+			|| name(entry.name).toLowerCase().includes(query)
 			|| entry.name.toLowerCase().includes(query) || entry.formula.toLowerCase().includes(query);
 		const sections = groups.map(category => ({
 			category, entries: structureCatalog.filter(entry => entry.category === category && matches(entry)),
@@ -1131,9 +1134,9 @@ export class ChemLabMoleculeBuilder extends LitElementWw {
 				.value=${this.catalogQuery}
 				@sl-input=${(event: Event) => { this.catalogQuery = (event.currentTarget as SlInput).value; }}></sl-input>
 			<div class="catalog-list">
-				${sections.length ? sections.map(section => html`<section class="catalog-group" aria-label=${section.category}>
+				${sections.length ? sections.map(section => html`<section class="catalog-group" aria-label=${name(section.category)}>
 					<div class="catalog-group-heading" role="heading" aria-level="3">
-						<sl-badge variant="primary">${section.category}</sl-badge>
+						<sl-badge variant="primary">${name(section.category)}</sl-badge>
 					</div>
 					<div class="catalog-entries">
 						${section.entries.map(entry => html`
@@ -1145,7 +1148,7 @@ export class ChemLabMoleculeBuilder extends LitElementWw {
 											?? this.renderRoot.querySelector<HTMLElement>(".board"))?.focus();
 									});
 								}}>
-								<span class="catalog-entry-name">${entry.name}</span>
+								<span class="catalog-entry-name">${name(entry.name)}</span>
 								<span class="catalog-entry-formula">${entry.formula}</span>
 							</button>
 						`)}
@@ -1238,8 +1241,9 @@ export class ChemLabMoleculeBuilder extends LitElementWw {
 				waters, monatomicIons: aqueous.monatomicIons,
 				picked: this.picked, hovered: this.hoveredAtom, bondStart: this.bondStart, from: this.#gesture?.from,
 				preview: this.bondPreview, order: this.bondOrder, ionicPreview: this.bondMode === "ionic", drag: this.diagramDrag,
-				label: this.#t(diagram.ends ? "Lewis structure of the repeating unit" : "Lewis structure",
-					diagram.ends ? "Lewis-Struktur der Wiederholungseinheit" : "Lewis-Struktur"),
+				label: diagram.ends
+					? this.#t("Lewis structure of the repeating unit", "Lewis-Struktur der Wiederholungseinheit")
+					: this.#t("Lewis structure", "Lewis-Struktur"),
 				oxidationLabel: this.#t("Oxidation state", "Oxidationszahl"),
 				unknownLabel: this.#t("undetermined", "nicht bestimmt"),
 			});
@@ -1277,8 +1281,8 @@ export class ChemLabMoleculeBuilder extends LitElementWw {
 	}
 
 	#renderAtomicSummary({ species, configuration }: AtomInspection) {
-		const name = elementByAtomicNumber(species.atomicNumber).names[this.#t("en", "de")];
-		const t = (en: string, de: string) => this.#t(en, de);
+		const name = elementName(elementByAtomicNumber(species.atomicNumber), this.lang);
+		const t = (en: string, de: string, values?: Record<string, string | number>) => this.#t(en, de, values);
 		return html`<section class="model-summary atomic-summary" aria-label=${t("Atom models", "Atommodelle")}>
 			<div class="atomic-title">
 				<sl-button size="small" class="icon-control atomic-back" aria-label=${t("Back to structure", "Zur Struktur")}
@@ -1340,7 +1344,7 @@ export class ChemLabMoleculeBuilder extends LitElementWw {
 		const displays = showDisplay && hasMolecularDisplays(current);
 		const molecular = displays ? this.molecularDisplay : "sticks";
 		const lone = !crystal && current.atoms.length === 1 ? current.atoms[0] : undefined;
-		const composition = lone ? elementByAtomicNumber(lone.atomicNumber).names[this.#t("en", "de")]
+		const composition = lone ? elementName(elementByAtomicNumber(lone.atomicNumber), this.lang)
 			: this.#atoms.length && (!crystal || this.view === "3d")
 			? chemicalFormula(aqueous ? current.name : !crystal && current.repeatUnit && this.view === "2d"
 				? formula({ ...current, atoms: this.#lewis(current).atoms }) : formula(current))
@@ -1466,7 +1470,7 @@ export class ChemLabMoleculeBuilder extends LitElementWw {
 					? undefined : atomRadius(atom.atomicNumber));
 		const radiusLabel = radius && {
 			covalent: this.#t("covalent", "kovalent"), empirical: this.#t("empirical", "empirisch"),
-			ionic: this.#t(`ionic, CN ${radius.coordination}`, `ionisch, KZ ${radius.coordination}`),
+			ionic: this.#t("ionic, CN {radiuscoordination}", "ionisch, KZ {radiuscoordination}", { radiuscoordination: radius.coordination }),
 			metallic: this.#t("metallic", "metallisch"), vdw: "van der Waals", schematic: "",
 		}[radius.model];
 		const here = atom && current.kind === "molecule" && current.atoms.find(entry => entry.id === atom.id);
@@ -1521,7 +1525,7 @@ export class ChemLabMoleculeBuilder extends LitElementWw {
 						<span class="summary-caption">${current.kind === "molecule" && current.geometry === "supplied"
 							? this.#t("3D bond lengths", "3D-Bindungslängen") : this.#t("Estimated 3D bond lengths", "Geschätzte 3D-Bindungslängen")}</span>
 						<div class="card-facts">${lengths.map(({ neighbor, length }) => html`<sl-tag size="small">${symbol(neighbor.atomicNumber)} ·
-							${neighbor.id} · ${length.toLocaleString(this.#t("en", "de"), { maximumFractionDigits: 3 })} Å</sl-tag>`)}</div>
+							${neighbor.id} · ${length.toLocaleString(catalogLanguage(this.lang), { maximumFractionDigits: 3 })} Å</sl-tag>`)}</div>
 					</div>` : nothing}
 					<div class="site-picker" role="group" aria-label=${current.kind === "crystal"
 						? this.#t("Site", "Gitterplatz") : this.#t("Atom", "Atom")}>
@@ -1649,8 +1653,8 @@ export class ChemLabMoleculeBuilder extends LitElementWw {
 					${this.tool === "bond" && this.bondMode !== "ionic" ? html`<span class="bond-orders" role="group" aria-label=${this.#t("Bond order", "Bindungsordnung")}>
 						${([1, 2, 3] as BondOrder[]).map(order => html`<sl-button class="icon-control" size="small"
 							variant=${order === this.bondOrder ? "primary" : "default"} aria-pressed=${String(order === this.bondOrder)}
-							aria-label=${this.#t(`Bond order ${order}`, `Bindungsordnung ${order}`)}
-							title=${this.#t(`Bond order ${order}`, `Bindungsordnung ${order}`)}
+							aria-label=${this.#t("Bond order {order}", "Bindungsordnung {order}", { order })}
+							title=${this.#t("Bond order {order}", "Bindungsordnung {order}", { order })}
 							@click=${() => { this.bondOrder = order; }}>${order}</sl-button>`)}
 					</span>` : nothing}
 				</div>
@@ -1689,7 +1693,7 @@ export class ChemLabMoleculeBuilder extends LitElementWw {
 					<div class="board" tabindex="0" aria-label=${this.#t("Structure workspace", "Struktur-Arbeitsfläche")}
 						@pointerdown=${this.#pointerDown} @pointermove=${this.#pointerMove} @pointerup=${this.#pointerUp} @pointercancel=${this.#pointerUp} @wheel=${this.#wheel}>
 						<div class="scene" ?hidden=${!sceneVisible}></div>
-						${atomic ? html`<chemlab-atomic-figure class="builder-atom-figure" lang=${this.#t("en", "de")}
+						${atomic ? html`<chemlab-atomic-figure class="builder-atom-figure" lang=${this.lang || "en"}
 							.atomicNumber=${atomic.species.atomicNumber} .configuration=${atomic.configuration} .choices=${this.atomChoices}
 							.symbolText=${atomSymbol}
 							.pause=${this.pauseShellElectrons} .interactive=${explicitAtom || this.tool === "orbit"}
@@ -1708,7 +1712,7 @@ export class ChemLabMoleculeBuilder extends LitElementWw {
 						<div class="view-tools" role="group" aria-label=${this.#t("Canvas view", "Ansicht der Zeichenfläche")}>
 							${atomic && this.atomChoices.model === "orbitals" && this.orbitalHint
 								? html`<span class="atomic-hint orbital-hint" role="tooltip">${this.orbitalHint}</span>` : nothing}
-							${nucleus ? html`<span class="atomic-hint">${renderNucleusLabel(nucleus, atomSymbol, (en, de) => this.#t(en, de))}</span>` : nothing}
+							${nucleus ? html`<span class="atomic-hint">${renderNucleusLabel(nucleus, atomSymbol, (en, de, values) => this.#t(en, de, values))}</span>` : nothing}
 							<sl-tag size="small" class="grid-scale" hidden>
 								<span class="grid-scale-line" aria-hidden="true"></span><span class="grid-length"></span>
 							</sl-tag>
