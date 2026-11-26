@@ -11,7 +11,7 @@ import {
 	state,
 } from "lit/decorators.js";
 
-import { style } from "chemlab-style";
+import { style } from "./chemlab-style.js";
 
 import * as PIXI from "pixi.js";
 import * as chemlib from "./chemlib";

@@ -6,7 +6,7 @@ const messages = new Map(
         [locale.toLowerCase(), entries as Record<string, string>]),
 );
 
-const localeDefaults = new Map([["no", "nb"], ["pt", "pt-pt"], ["sr", "sr-cyrl"], ["zh", "zh-hans"]]);
+const localeDefaults = new Map([["no", "nb"], ["pt", "pt-pt"], ["zh", "zh-hans"]]);
 
 function translate(source: string, language: string) {
     const tag = language.trim().toLowerCase();

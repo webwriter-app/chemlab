@@ -9,7 +9,7 @@
  * @packageDocumentation
  */
 
-import { LitElementWw, action } from "@webwriter/lit";
+import { LitElementWw } from "@webwriter/lit";
 import { property } from "lit/decorators.js";
 import { html, nothing, svg, type PropertyValues } from "lit";
 
@@ -400,8 +400,9 @@ export class ChemLabPeriodicTable extends LitElementWw {
 		},
 	};
 
-	options = ChemLabPeriodicTable.options;
-	optionGroups = ChemLabPeriodicTable.optionGroups;
+	static actions = {
+		clearInitialElement: { label: { _: "Clear initial element", de: "Startelement entfernen" } },
+	};
 
 	/**
 	 * Registers the live selection as a reactive property without an attribute.
@@ -533,7 +534,6 @@ export class ChemLabPeriodicTable extends LitElementWw {
 	 * The native number option cannot always be cleared in the editor, so authors
 	 * get an explicit action for it.
 	 */
-	@action({ label: { _: "Clear initial element", "de-DE": "Startelement entfernen" } })
 	clearInitialElement() {
 		this.initialElement = null;
 	}

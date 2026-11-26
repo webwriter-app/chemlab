@@ -127,7 +127,7 @@ const AXES_ICON = svg`<svg width="16" height="16" viewBox="0 0 16 16" aria-hidde
 const ELECTRONS_ICON = svg`<svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true" fill="currentColor" stroke="none">
 	<circle cx="4.4" cy="8" r="1.7" /><circle cx="11.6" cy="8" r="1.7" /></svg>`;
 
-@customElement(BUILDER_TAG)
+@customElement("webwriter-chemlab-molecule-builder")
 export class ChemLabMoleculeBuilder extends LitElementWw {
 	static styles = [builderStyles, atomicModelStyles];
 	static scopedElements = {
@@ -147,7 +147,6 @@ export class ChemLabMoleculeBuilder extends LitElementWw {
 			label: { _: "Linked ChemLab ID", "de-DE": "ID des verknüpften ChemLab" },
 		},
 	};
-	options = ChemLabMoleculeBuilder.options;
 	@property({ type: String, attribute: "element-source-id", reflect: true }) accessor elementSourceId = "";
 	@property({ type: String, attribute: "lab-id", reflect: true }) accessor labId = "";
 	@property({ type: Boolean, attribute: "pause-shell-electrons", reflect: true }) accessor pauseShellElectrons = false;
