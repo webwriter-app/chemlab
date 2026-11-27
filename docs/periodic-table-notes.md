@@ -73,10 +73,10 @@ The page needs a bundle, because the router is a module and not part of the widg
 
 ```sh
 node_modules/.bin/esbuild tests/fixtures/worksheet-browser.ts \
-    --bundle --format=esm --outfile=tests/fixtures/worksheet-browser.js
+    --bundle --format=esm --target=es2022 --outfile=tests/fixtures/worksheet-browser.js
 ```
 
-esbuild writes `worksheet-browser.css` next to it; the page links both and `.gitignore` keeps the generated files out of the repository. The fixture has not been run in a browser in this environment, so its results are still open; the Node suite covers the same contract against a fake worksheet.
+esbuild writes `worksheet-browser.css` next to it; the page links both and `.gitignore` keeps the generated files out of the repository. The Node suite also checks the routing contract against a fake worksheet.
 
 ## Open checks awaiting a manual WebWriter import
 

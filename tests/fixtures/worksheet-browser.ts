@@ -11,7 +11,7 @@
  *
  * ```sh
  * node_modules/.bin/esbuild tests/fixtures/worksheet-browser.ts \
- *     --bundle --format=esm --outfile=tests/fixtures/worksheet-browser.js
+ *     --bundle --format=esm --target=es2022 --outfile=tests/fixtures/worksheet-browser.js
  * ```
  *
  * esbuild writes `worksheet-browser.css` next to it; the page links both. The
@@ -23,7 +23,6 @@
 import "../../webwriter-chemlab-periodic-table";
 import {
 	SelectionRouter,
-	type RoutingElement,
 	type RoutingRoot,
 } from "../../periodic-table/routing";
 import { ELEMENT_SELECTION_EVENT, elementSelection } from "../../periodic-table/selection";
@@ -44,15 +43,9 @@ interface Exercise {
 	readonly run: () => Promise<string>;
 }
 
-const worksheet = document.getElementById("worksheet") as HTMLElement;
+const worksheet = document.getElementById("worksheet") as HTMLElement & RoutingRoot;
 const results = document.getElementById("results") as HTMLElement;
 const summary = document.getElementById("summary") as HTMLElement;
-
-/** Worksheet scope handed to the router. */
-const root: RoutingRoot = {
-	querySelectorAll: (selector: string) =>
-		worksheet.querySelectorAll(selector) as unknown as ArrayLike<RoutingElement>,
-};
 
 /** Receiver stub with a visible last value and delivery count. */
 class Stub {
@@ -67,7 +60,7 @@ class Stub {
 	constructor(sourceId: string, panel: HTMLElement) {
 		this.#panel = panel;
 		this.router = new SelectionRouter({
-			root,
+			root: worksheet,
 			sourceId,
 			expectedTag: TABLE_TAG,
 			onSelection: (selection) => {
@@ -125,10 +118,27 @@ function cellOf(table: TableElement, atomicNumber: number): HTMLElement | null {
 }
 
 /** @returns The atomic number of the focused element, or `null`. */
-function focusedAtomicNumber(): number | null {
-	const active = document.activeElement as HTMLElement | null;
+function focusedAtomicNumber(table: TableElement): number | null {
+	const active = table.shadowRoot?.activeElement;
 	const raw = active?.getAttribute("data-atomic-number");
-	return raw === null || raw === undefined ? null : Number(raw);
+	if (raw != null) return Number(raw);
+	return active?.matches(".list-details .details-card") ? table.selectedAtomicNumber : null;
+}
+
+/** Starts grid exercises above the auto-layout breakpoint on any viewport. */
+async function withWideTable(run: () => Promise<string>): Promise<string> {
+	const { inlineSize, maxInlineSize } = tableA.style;
+	tableA.style.maxInlineSize = "none";
+	tableA.style.inlineSize = "760px";
+	try {
+		await settle();
+		await settle();
+		return await run();
+	} finally {
+		tableA.style.inlineSize = inlineSize;
+		tableA.style.maxInlineSize = maxInlineSize;
+		await settle();
+	}
 }
 
 /** Clears both stubs and restores the default selection. */
@@ -221,14 +231,12 @@ const exercises: Exercise[] = [
 			const fresh = document.createElement(TABLE_TAG) as TableElement;
 			fresh.id = "table-a";
 			fresh.selectedAtomicNumber = 8;
-			tableA.remove();
-			worksheet.append(fresh);
+			tableA.replaceWith(fresh);
 			await settle();
 			await fresh.updateComplete;
 			const view = fresh.selectedAtomicNumber;
 			const delivered = builder.text;
-			fresh.remove();
-			worksheet.prepend(tableA);
+			fresh.replaceWith(tableA);
 			await settle();
 			return `view=${view} A=${delivered}`;
 		},
@@ -236,7 +244,7 @@ const exercises: Exercise[] = [
 	{
 		name: "arrow key moves focus to the next cell",
 		expected: "focus=2",
-		run: async () => {
+		run: () => withWideTable(async () => {
 			await reset();
 			const cell = cellOf(tableA, 1);
 			if (cell === null) return "focus=missing cell";
@@ -245,27 +253,28 @@ const exercises: Exercise[] = [
 				new KeyboardEvent("keydown", { key: "ArrowRight", bubbles: true, composed: true }),
 			);
 			await settle();
-			return `focus=${focusedAtomicNumber()}`;
-		},
+			return `focus=${focusedAtomicNumber(tableA)}`;
+		}),
 	},
 	{
-		name: "focus survives a switch to the list layout",
+		name: "focus survives a switch to the list layout after reattachment",
 		expected: "focus=8",
-		run: async () => {
+		run: () => withWideTable(async () => {
 			await reset();
+			const anchor = document.createComment("");
+			tableA.replaceWith(anchor);
+			anchor.replaceWith(tableA);
 			tableA.selectedAtomicNumber = 8;
 			await settle();
 			const cell = cellOf(tableA, 8);
-			if (cell === null) return "focus=missing cell";
+			if (!cell?.classList.contains("cell")) return "grid cell missing";
 			cell.focus();
-			tableA.style.width = "500px";
+			tableA.style.inlineSize = "500px";
 			await settle();
 			await settle();
-			const focused = focusedAtomicNumber();
-			tableA.style.width = "";
-			await settle();
-			return `focus=${focused}`;
-		},
+			if (!tableA.shadowRoot?.querySelector(".list")) return "list layout missing";
+			return `focus=${focusedAtomicNumber(tableA)}`;
+		}),
 	},
 ];
 

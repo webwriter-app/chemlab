@@ -673,19 +673,20 @@ export class ChemLabPeriodicTable extends LitElementWw {
 		}
 	}
 
-	/** Measures the host once and then follows every resize. */
+	/** Measures the host after its first render. */
 	protected firstUpdated() {
 		this.#measure();
 		this.#observeLanguage();
-		if (typeof ResizeObserver === "function") {
+	}
+
+	/** Observes the host and reads the stored filters on every connection. */
+	connectedCallback() {
+		super.connectedCallback();
+		if (this.hasUpdated) this.#measure();
+		if (this.#resizeObserver === null && typeof ResizeObserver === "function") {
 			this.#resizeObserver = new ResizeObserver(() => this.#measure());
 			this.#resizeObserver.observe(this);
 		}
-	}
-
-	/** Follows the language of the enclosing content and reads the stored filters. */
-	connectedCallback() {
-		super.connectedCallback();
 		this.#observeLanguage();
 		this.#restoreFilters();
 		this.#observeAuthoredState();
