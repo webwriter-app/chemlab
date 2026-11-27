@@ -1,5 +1,5 @@
-# Chemlab (`@webwriter/chemlab@2.1.1`)
-[License: MIT](LICENSE) | Version: 2.1.1
+# Chemlab (`@webwriter/chemlab@2.1.2`)
+[License: MIT](LICENSE) | Version: 2.1.2
 
 Build molecules, explore the periodic table, and simulate chemistry experiments.
 
