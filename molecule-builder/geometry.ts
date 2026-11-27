@@ -3,7 +3,7 @@ import { elementByAtomicNumber } from "../periodic-table/element-reference";
 import { diatomics } from "../data/structures/sources.json";
 import { isCovalentBond, ionicCharges } from "./bond-types";
 import { atomRadius, estimatedBondLength, ionicRadius } from "./radii";
-import type { Atom, Bond, Molecule, Point3, Structure } from "./structure";
+import type { Atom, Bond, Molecule, Point3 } from "./structure";
 
 const experimentalDiatomics = new Map(Object.values(diatomics).map(([number, order, length]) => [`${number}:${order}`, length]));
 

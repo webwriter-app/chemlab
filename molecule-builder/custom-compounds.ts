@@ -2,12 +2,12 @@ import { readAqueousAcidBase, type AqueousAcidBase } from "../chemlib/AcidBase";
 import { iupacSource, lookupIupacDissociation } from "../chemlib/IupacDissociation";
 import { ElementData } from "../chemlib/ElementData";
 import { lookupCompound, lookupDissociation, type CompoundMetadata, type DissociationRow } from "../chemlib/PubChem";
-import { saltIonList, saltSolubility, type SaltIonCount } from "../chemlib/saltSolubility";
-import { chemicalCatalog, solutionDisplayNames, type ChemicalRecipe, type MoleculeDefinition, withConcentration } from "../data/chemicals";
+import { saltSolubility } from "../chemlib/saltSolubility";
+import { chemicalCatalog, type ChemicalRecipe, type MoleculeDefinition, withConcentration } from "../data/chemicals";
 import { loadMoleculeDefinition } from "../data/moleculeDefinition";
 import { commonIonCharge, completeIonicFormula, isCovalentBond, ionicCharges } from "./bond-types";
 import { formula } from "./formula";
-import { catalogReagent, formulaUnit, reagentLimit, type CatalogIdentity, type FormulaUnit } from "./reagent-forms";
+import { catalogReagent, formulaUnit, reagentLimit, type CatalogIdentity } from "./reagent-forms";
 import { readStructure, type Atom, type Bond, type Molecule, type Structure } from "./structure";
 
 type Classification = "acid" | "base" | "ampholyte" | "salt" | "other";

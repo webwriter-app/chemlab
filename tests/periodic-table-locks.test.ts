@@ -143,7 +143,7 @@ test("every interface switch carries its own boolean option and attribute", () =
 
 test("the table publishes the options and reads the stored filters", () => {
 	assert.match(source, /\.\.\.INTERFACE_LOCK_OPTIONS/);
-	assert.match(source, /interface: \{ label: \{ _: "Learner interface"/);
+	assert.match(source, /interface: \{ label: localizedLabel\("Learner interface", "Oberfläche für Lernende"\)/);
 	assert.match(source, /get canAuthor\(\): boolean/);
 	assert.match(source, /attributeFilter: \["class", "contenteditable"\]/);
 	assert.match(source, /if \(!this\.canAuthor \|\| !this\.isConnected\) return;/);

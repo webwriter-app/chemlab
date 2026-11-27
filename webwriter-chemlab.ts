@@ -11,7 +11,7 @@ import {
 	state,
 } from "lit/decorators.js";
 
-import { style } from "chemlab-style";
+import { style } from "./chemlab-style.js";
 
 import * as PIXI from "pixi.js";
 import * as chemlib from "./chemlib";
@@ -327,22 +327,6 @@ export class ChemLab extends LitElementWw {
 	 */
 	@query("#contextEchemInfo")
 	private accessor contextEchemInfo: HTMLDivElement;
-	/**
-	 * part of options, toggles xAPI statements
-	 *
-	 * @private
-	 * @type {SlCheckbox}
-	 */
-	@query("#xAPICheck")
-	private accessor xAPICheck: SlCheckbox;
-	/**
-	 * xAPI API key input
-	 *
-	 * @private
-	 * @type {SlInput}
-	 */
-	@query("#xAPIKeyInput")
-	private accessor xAPIKeyInput: SlInput;
 	@query("#canvasArea")
 	accessor canvasArea: HTMLDivElement;
 
@@ -660,13 +644,13 @@ export class ChemLab extends LitElementWw {
 		type: Boolean,
 		reflect: true,
 		converter: {
-			fromAttribute: (value: string, type: boolean) => {
+			fromAttribute: (value: string) => {
 				if (value === "true") {
 					return true;
 				}
 					return value === "";
 			},
-			toAttribute: (value: boolean, type: string) => {
+			toAttribute: (value: boolean) => {
 				if (value) {
 					return "true";
 				}

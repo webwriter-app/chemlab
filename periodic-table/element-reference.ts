@@ -317,6 +317,10 @@ export function categoryOf(atomicNumber: number): string | undefined {
 	return placementOf(atomicNumber)?.category;
 }
 
+export function elementName(element: ElementReference, language: string) {
+	return element.names[/^de(?:-|$)/i.test(language) ? "de" : "en"];
+}
+
 /** A standard atomic weight rendered for one locale. */
 export type AtomicWeightText =
 	| { readonly kind: "value"; readonly text: string }
@@ -336,9 +340,9 @@ export type AtomicWeightText =
  */
 export function atomicWeightText(
 	weight: StandardAtomicWeight,
-	locale: "en" | "de",
+	locale: string,
 ): AtomicWeightText {
-	const separator = locale === "de" ? "," : ".";
+	const separator = new Intl.NumberFormat(locale).formatToParts(1.1).find(part => part.type === "decimal")?.value ?? ".";
 	const localize = (decimal: string) => decimal.replace(".", separator);
 	switch (weight.kind) {
 		case "value":

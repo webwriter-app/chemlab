@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { idealSolubility, ionCharge, saltSolubility } from "chemlib/saltSolubility";
+import { idealSolubility, ionCharge, saltSolubility } from "../chemlib/saltSolubility";
 import { chemicalCatalog } from "../data/chemicals";
 import { analyzeBuilderCompound, builderRecipes, builderStockFor, hydrateBuilderChemical,
 	ionicHydroxide, portableBuilderChemical, readBuilderChemical } from "../molecule-builder/custom-compounds";
